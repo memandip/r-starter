@@ -1,0 +1,964 @@
+---
+title: "Project 1"
+author: "Mandip Chaudhary (17)"
+date: "2025-03-09"
+output:
+  html_document: 
+    toc: true
+  pdf_document: default
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Session 1 and 2
+
+## (Simple) Data entry in R
+
+```{r}
+data <- c(1,2,3,4,5,6,7,8,9)
+data
+text <- c("a", "b", "c", "d", "e", "f", "g", "h", "i")
+text
+
+# text2 <- c(a, b, c, d, e, f, g, h, i)
+ # throws error as without quotes a,b,c,etc are treated as variables but are not defined
+
+data2 <- cbind(data, text)
+data2
+```
+
+```{r}
+# data2 is defined as a two uni-dimensional matrix arrays i.e. data and text
+class(data2)
+```
+
+## Arrays and Matrices in R:
+
+```{r}
+M <- matrix(
+  c(1:9),
+  nrow = 3,
+  ncol = 3,
+  byrow = TRUE
+)
+
+print(M)
+
+```
+
+```{r}
+V <- c(1:12)
+
+# Multidimensional array
+MDA <- array(V, dim = c(2,3,2))
+print(MDA)
+```
+
+## Creating a simple "data.frame" in R
+
+```{r}
+df <- data.frame(x=c(1,2,3), y=c(2,3,4), z=c(3,4,5))
+print(df)
+```
+
+```{r}
+print(class(df))
+```
+
+## A small but realistic data frame and its use:
+
+```{r}
+emp.data <- data.frame(
+  emp_id = c(1:5),
+  emp_name =c("Rick", "Dan", "Michelle", "Ryan", "Gary"),
+  salary = c(623.3, 515.2, 611.0, 729.0, 845.25),
+  start_date = as.Date(c("2012-01-01", "2013-09-23", "2014-11-15", "2014-05-
+  11", "2015-03-27")),
+  stringAsFactors = FALSE
+)
+
+#Print the data
+print(emp.data)
+```
+
+## Structure and Summary of Sample Data Frame in R:
+
+```{r}
+str(emp.data)
+```
+
+### Print the Summary
+
+```{r}
+print(summary(emp.data))
+```
+
+## Extract part of data from Data Frame in R: (Very useful when working with large data)
+
+```{r}
+result <- data.frame(emp.data$emp_name, emp.data$salary)
+print(result)
+```
+
+### Extract first two rows
+
+```{r}
+result <- emp.data[1:2,]
+print(result)
+```
+
+### Extract 3rd and 5th row with 2nd and 4th column.
+
+```{r}
+result <- emp.data[c(3,5), c(2,4)]
+print(result)
+```
+
+## Add a new column in existing Data Frame:
+
+```{r}
+# Add the "dept" column
+emp.data$dept <- c("IT", "Operations", "IT", "HR", "Finance")
+v <- emp.data
+print(v)
+```
+
+## Expand data frame in R (Adding cases):
+
+```{r}
+# Create the first data frame.
+emp.data <- data.frame(
+  emp_id = c(1:5),
+  emp_name = c("Rick", "Dan", "Michelle", "Ryan", "Gary"),
+  salary = c(623.3, 515.2,611.0, 729.0,843.25),
+  start_date = as.Date(c("2012-01-01", "2013-09-23", "2014-11-15", "2014-05-11", "2015-03-27")),
+  dept = c("IT", "Operations", "IT", "HR", "Finance"),
+  stringsAsFactors = FALSE
+)
+
+# Create the second data frame
+emp.newdata <- data.frame(
+  emp_id = c(6:8),
+  emp_name = c("Ramsi", "Pranab", "Tusar"),
+  salary = c(578.0,722.5,632.8),
+  start_date = as.Date(c("2013-05-21", "2013-07-30", "2014-06-17")),
+  dept = c("IT", "Operations","Finance"),
+  stringsAsFactors = FALSE
+)
+emp.data
+emp.newdata
+```
+
+## Expand data frame in R (rbind is used):
+
+```{r}
+# Bind the two data frames.
+emp.finaldata <- rbind(emp.data, emp.newdata)
+print(emp.finaldata)
+```
+
+## Import data in R: Text files
+
+### Base read.csv function to read csv file:
+
+```{r}
+covid.data <- read.csv("~/Desktop/projects/r-starter/covnep_252days.csv")
+head(covid.data)
+```
+
+## Import data in R: Excel files
+
+-   Packages:
+    -   "readxl", "xlxs" packages
+
+### Readxl package to read excel files:
+
+-   Get summary of this "data.frame" in R!
+
+```{r}
+library(readxl)
+read_excel("~/Documents/Basic.xlsx")
+```
+
+# Session 3
+
+## Basics of R
+
+> R can do Math!. It follows PEMDAS rule. Parenthesis, Exponents, Multiplication, Division, Addition and Subtraction
+
+```{r}
+4 * 6 + 5 # 
+(4 * 6) + 5 # 
+4 * (6 + 5) #
+(4 + 6)^2 * 5 / 10 + 9 - 1
+```
+
+## Variables in R: assigning and removing
+
+-   Variable names can contain any combination of alphanumeric characters along with period(.) and underscore (\_) e.g. age.group or age_group
+-   However, they cannot start with a number or an underscore e.g. \_age or 5age
+-   Best practice is to use actual names, usually nouns for variables instead of single letter e.g. age, sex
+
+```{r}
+x <- 2 # (preferred)
+x = 2
+2 -> x
+assign("x", 2)
+rm(x)
+```
+
+## R is case sensitive
+
+```{r}
+theVariable <- 17
+# will give error if we type: TheVariable or THE VARIABLE
+Age <- 50
+# will be different for: age or AGE
+```
+
+## Data Types
+
+#### Numeric
+
+-   Type of data can be checked using class() function
+-   For numeric “class” and “is.numeric” both works:
+
+```{r}
+x <- c(1,2,3,4,5,6,7,8,9)
+class(x)
+is.numeric(x)
+```
+
+### Integer
+
+-   For integer “class” and “is.numeric” both works:
+
+```{r}
+x <- c(1:9) # or c(1L:9L)
+class(x)
+X <- c(1L,2L,3L,4L,5L,6L,7L,8L,9L)
+is.numeric(x) # R promotes “integers” to “numeric” when needed
+```
+
+#### R promotes “integers” to “numeric” when needed
+
+```{r}
+#Multiply integer by numeric in decimal values
+4L * 2.8
+class(4L)
+class(2.8)
+class(4L * 2.8)
+
+# Divide integer by integer giving decimal value
+5L / 2L # Will not promote to numeric here
+class(5L)
+class(2L)
+class(5L / 2L)
+4L * 5L  #Will also not promote here
+2L + 4L + 5L
+
+class(4L * 5L)
+class(2L + 4L + 5L)
+```
+
+#### Character
+
+```{r}
+x <- "data"
+x
+class(x)
+nchar(x) # number of characters
+
+
+# Factor
+y <- factor("data")
+y
+class(y)
+# nchar(y) # Error in nchar(y) : 'nchar()' requires a character vectors
+```
+
+### Factors and attributes in R:
+
+```{r}
+gender <- factor(c("male", "female", "female", "male"))
+typeof(gender) #datatype
+attributes(gender) #Levels and class
+unclass(gender) #Check how it is stored in R
+```
+
+### Date
+
+```{r}
+# Date: to store date
+date1 <- as.Date("2023-03-29")
+date1
+class(date1)
+as.numeric(date1)
+
+# POSIXct: To store date and time
+# Easier manipulation of date and time objects can be accomplished using “lubridate” and “chron” packages
+date2 <- as.POSIXct("2023-03-29 06:30")
+date2
+class(date2)
+as.numeric(date2)
+```
+
+#### Logical
+
+```{r}
+# TRUE (=1)
+# FALSE (=0)
+
+TRUE * 5
+FALSE * 5
+
+#Class and Check
+k <- TRUE
+class(k)
+is.logical(k)
+```
+
+#### Logical Data Types
+
+```{r}
+2 == 3 # (FALSE)
+2 != 3 # (TRUE)
+2 < 3 # (TRUE)
+2 <= 3 # (TRUE)
+2 > 3 # (FALSE)
+2 >= 3 # (FALSE)
+"data" == "stats" # (FALSE, why?)
+"data" < "stats" # (TRUE, why?)
+```
+
+#### Vectors
+
+> A vector is collection of elements, all of the same type.
+
+#### Vectors and its operation in R
+
+```{r}
+x <- c(1,2,3,4,5,6,7,8,9,10) # x is a vector containing 10 elements
+x <- c(1:10) # shortcut for above code
+# c stands for “combine”
+x * 3 #Multiplication by a scalar
+x + 2 #Addition with a scalar
+x - 3 #Subtraction with a scalar
+x / 4 # Division by a scalar
+x^2 #Exponentiation by a scalar
+sqrt(x) #Square root
+```
+
+#### Extending vector operations in R
+
+```{r}
+#Two vector of equal length
+x <- 1:10
+y <- -5:4
+x+y
+x-y
+x*y
+x/y
+x^y
+
+#Check length of the vector
+length(x)
+length(y)
+length(x+y)
+```
+
+### Extending vector operations in R
+
+```{r}
+#Two vectors of unequal length
+x <- 1:10
+z <-c(1,2)
+x+z
+
+#Two vectors of unequal length
+x <- 1:10
+w <-c(1,2,3)
+x+w
+
+#Comparing vectors
+x <= 5
+x > y
+x < y
+
+# Using “any” and “all”
+x <- 10:1
+y <- -4:5
+any(x<y)
+all(x<y)
+
+#Using “nchar”
+nchar(y)
+```
+
+### Assessing individual elements of a vector
+
+```{r}
+x[1]
+# x[1,2] # throws error
+x[c(1,2)] # correct syntax to get multiple elements of vector
+
+#Giving names to a vector
+#Name value pair
+c(One="a", Two="y", Last="r")
+
+#Create vector then name it
+w <- 1:3
+names(w) <- c("a", "b", "c")
+w
+```
+
+## Missing data in R
+
+-   R has two types of missing data
+    -   NA
+    -   NULL
+
+### NA type missing data in R
+
+```{r}
+zchar <- c("Hockey", NA,"Cricket")
+nchar(z)
+z <- c(1,2,NA,8,3,NA,3)
+mean(z)
+
+#The “is.na” function tests each element of vector for missingness
+is.na(z)
+
+#The na.rm function with =TRUE argument will remove NA so that we can get values for:
+mean(z, na.rm=TRUE)
+var(z, na.rm=TRUE)
+sd(z, na.rm=TRUE)
+```
+
+### NULL type missing data in R
+
+```{r}
+z <- c(1, NULL, 3) # NULL is the absence of anything
+is.null(z)
+d <- NULL
+is.null(d)
+is.null(7)
+```
+
+## Pipes in R
+
+```{r}
+x <- 1:10
+mean(x)
+
+library(magrittr)
+# Mean of x with pipe:
+x %>% mean
+```
+
+## Chained pipes in R
+
+```{r}
+z <-c(1,2,NA,8,3,NA,3)
+sum(is.na(z))
+#Pipes, without nesting
+z %>% is.na %>% sum
+#Additional argument
+z %>% mean(na.rm=TRUE)
+```
+
+## Advanced data structures in R
+
+```{r}
+x <- 10:1
+y <- -4:5
+q <-c("Hockey", "Football","Baseball", "Kabaddi", "Rugby", "Pingpong", "Basketball","Tennis","Cricket", "Volleyball")
+theDF <-data.frame(x, y, q)
+theDF
+```
+
+## Advanced data structures in R
+
+```{r}
+theDF <-data.frame(First=x, Second=y, Sport=q)
+names(theDF)
+names(theDF)[3]
+rownames(theDF)
+rownames(theDF) <- c("One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nice", "Ten")
+rownames(theDF)
+# Setting them back to generic index
+rownames(theDF) <- NULL
+rownames(theDF)
+
+head(theDF)
+head(theDF, n=7)
+tail(theDF)
+class(theDF)
+str(theDF)
+theDF[3,2]; theDF[3, 2:3]
+theDF[, 3]; theDF[3,]
+theDF[, c("First", "Sport")]
+theDF[, "Sport", drop=FALSE]
+```
+
+## Lists in R
+
+> Often a container is needed to hold arbitrary objects of either the same type or varying types. R accomplishes this through lists.
+
+```{r}
+list1 <- list(1,2,3)
+list2 <- list(c(1,2,3))
+list3 <- list(c(1,2,3), 3:7)
+list4 <- list(theDF, 1:10)
+list5 <- list(theDF, 1:10, list3)
+names(list5)
+names(list5) <-c("data.frame","vector", "list")
+names(list5)
+list5
+list6 <- list(TheDataFrame=theDF,TheVector=1:10, TheList=list3)
+names(list6)
+```
+
+### Access elements of list
+
+```{r}
+# Specify either the element number or name
+list5[[1]]
+list5[["data.frame"]]
+
+#Accessed element manipulation
+list5[[1]]$Sport #Sport variable
+list5[[1]][, "Second"]
+list5[[1]][, "Second", drop=F]
+length(list5)
+#Adding new element
+list5[[4]] <- 2
+list5[["NewElement"]] <-3:6
+names(list5) ; list5;
+```
+
+## Matrices in R
+
+-   This is a similar to a data.frame
+-   It is rectangular with rows and columns except that every single element must be the same type, most commonly all numerics
+
+```{r}
+A <- matrix(1:10, nrow=5)
+B <- matrix(21:30, nrow=5)
+C <- matrix(21:40, nrow=2)
+nrow(A)
+ncol(B)
+dim(C)
+A + B; A * B; A - B; A = B;
+```
+
+## Matrix multiplication and names in R
+
+```{r}
+# Number of columns of the left hand matrix to be same as number of rows of right hand matrix
+A %*% C # will work
+# A %*% B # will not work
+
+# Both A and B are 5 x 2 matrices so we will transpose B
+A %*% t(B)
+
+# Column/row names of matrix:
+colnames(A)
+colnames(A) <- c("Left", "Right")
+rownames(A) <- c("1st", "2nd", "3rd", "4th", "5th")
+t(A)
+colnames(B) <- c("First","Second")
+rownames(B) <- c("One", "Two", "Three", "Four", "Five")
+```
+
+## Arrays in R
+
+-   An array is essentially a multidimensional vector
+
+```{r}
+theArray <- array(1:12,
+dim=c(2,3,2)) # 2 dimensional matrices both with 2 rows and 3 columns
+
+theArray [1, , ] # 1st row of both
+theArray[1, ,1] # 1st row of first
+theArray[,1,] # 1st column of both
+```
+
+## WEB SCRAPING WITH R
+
+### Load in the Iris data from internet:
+
+```{r}
+iris <- read.csv(url("http://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data"), header = FALSE)
+head(iris)
+```
+
+#### Add column names for V1, V2, V3, V4 and V5 columns to the Iris data
+
+```{r}
+names(iris) <- c("Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width", "Species")
+iris
+```
+
+## Saving the data frame as “csv” file in laptop:
+
+```{r}
+write.csv(iris, "iris.csv") #Will save CSV file in working directory
+```
+
+### store the current directory
+
+```{r}
+initial.dir <- getwd()
+# change to the new Test directory
+setwd("~/Desktop/projects/r-starter")
+
+# load the necessary libraries
+library(magrittr) #for pipes
+
+# set the output file (it will bypass R and R Studio)
+sink("session3.out")
+# load the dataset from Test folder
+iris <- read.csv("iris.csv")
+
+# Do the analysis
+plot(iris)
+
+summary(iris)
+iris %$% cor(Sepal.Length, Sepal.Width)
+# close the output file
+sink()
+
+# unload the libraries
+detach("package:magrittr")
+
+# change back to the original directory
+setwd(initial.dir)
+```
+
+## Using forward pipe operator/s in R:
+
+> library(magrittr) required!
+
+```{r}
+library(magrittr)
+
+# Compute the square root of `iris$Sepal.Length` and assign it to the new variable
+iris$Sepal.Length.SQRT <- iris$Sepal.Length %>% sqrt()
+
+# Compute the square root of `iris$Sepal.Length` and assign it to the same variable
+iris$Sepal.Length %<>% sqrt
+
+# Return `Sepal.Length`
+iris$Sepal.Length
+```
+
+## The “tee” pipe operator “%T%”:
+
+> library(magrittr) required!
+
+```{r}
+set.seed(123)
+rnorm(200) %>%
+matrix(ncol = 2) %T>%
+plot %>%
+colSums
+```
+
+## The exposing pipe operator “%\$%”:
+
+> library(magrittr) required!
+
+```{r}
+iris %>%
+subset(Sepal.Length > mean(Sepal.Length)) %$%
+cor(Sepal.Length, Sepal.Width)
+
+# The %$% operation comes handy for functions where “data” argument is not required/used like built-in “cor” function of R!
+cor(iris$Sepal.Length, iris$Sepal.Width)
+```
+
+## Functions in R: Built-in functions
+
+```{r}
+# round()
+round(3.1415)
+round(3.1415, digits = 2)
+
+# factorial()
+factorial(3)
+factorial(2*3)
+
+# mean()
+mean(1:6)
+mean(c(1:30))
+```
+
+## “Sample” function: Random sampling without or with replacement in R
+
+```{r}
+die <- 1:6
+sample(x = die, size = 1)
+sample(x = die, size = 1)
+sample (x = die, size = 1, replace=TRUE)
+sample(x = die, size = 2)
+sample(x = die, size = 2)
+sample(x = die, size = 2, replace=TRUE)
+```
+
+## “Sample” function to split a datafile into train and test datasets
+
+```{r}
+# Make sure to have “iris.csv” datafile in the working directory and use read.csv to import it in R Studio:
+read.csv("iris.csv")
+
+# We can do the 70:30 random split of iris data frame as follow:
+set.seed(123)
+tt.sample <- sample(c(TRUE, FALSE), nrow(iris), replace=T, prob=c(0.7,0.3))
+train <- iris[tt.sample, ]
+test <- iris[!tt.sample, ]
+```
+
+## User-defined function in R:
+
+```{r}
+my_function <- function() {}
+```
+
+### User-defined function 1: roll()
+
+```{r}
+roll <- function() {
+  die <- 1:6
+  dice <- sample(die, size = 2, replace = TRUE)
+  sum(dice)
+}
+roll()
+roll()
+roll()
+```
+
+### User-defined function 2: roll2()
+
+```{r}
+roll2 <- function(dice = 1:6) {
+  dice <- sample(dice, size = 2, replace = TRUE)
+  sum(dice)
+}
+roll2()
+roll2()
+roll2()
+```
+
+### User-defined function 3: roll3(data?)
+
+```{r}
+roll3 <- function(dice) {
+  dice <- sample(dice, size = 2, replace = TRUE)
+  sum(dice)
+}
+
+roll3(1:6)
+roll3(1:12)
+roll3(1:24)
+```
+
+### More Functions
+
+```{r}
+best_practice <- c("Let", "the", "computer", "do", "the", "work")
+print_words <- function(sentence) {
+  print(sentence[1])
+  print(sentence[2])
+  print(sentence[3])
+  print(sentence[4])
+  print(sentence[5])
+  print(sentence[6])
+}
+print_words(best_practice) 
+print_words(best_practice[-6]) 
+best_practice[-6] 
+```
+
+## We can use functions with “for” loop in R!
+
+```{r}
+print_words <- function(sentence) {
+  for (word in sentence) {
+    print(word)
+  }
+}
+print_words(best_practice) 
+print_words(best_practice[-6]) 
+best_practice[-6] 
+```
+
+## Condition: if and else
+
+```{r}
+#Checking values of y with x:
+# if (y < 20) {
+#   x <- "Too low"
+# } else {
+#  x <- "Too high"
+# }
+
+#Will this work?
+check.y <- function(y) {
+  if (y < 20) {
+    print("Too Low")
+  } else {
+    print("Two high")
+  }
+}
+
+check.y(10)
+check.y(30)
+```
+
+## Creating binary variables with “ifelse”
+
+```{r}
+y <- 1:40
+ifelse(y<20, "Too low", "Too high")
+# It’s a logical as:
+ifelse(y<20, TRUE, FALSE)
+
+y <- 1:40
+ifelse(y<20, 1, 0)
+```
+
+## Multiple conditions:
+
+``` r
+if (this) {
+# do that
+} else if (that) {
+# do something else
+} else if (that) {
+# do something else
+} else
+# remaining
+}
+```
+
+```{r}
+check.x <- function(x=1:99){
+  if (x<20){
+    print("Less than 20")} else{
+      if (x<40) {
+        print("20-39")
+      } else {
+        if (x<100) {
+          print("41-99")
+        }
+     }
+   }
+}
+check.x(15)
+check.x(30)
+check.x(45)
+```
+
+## Multiple Conditions: combining “ifelse”
+
+```{r}
+x <- 1:99
+x1 <- ifelse(x<20, 1,0) #Binary numbers
+x2.1 <- ifelse(x<20, "<20", "20+") #Binary text
+# x2.2 # ? For x between 20 and less than 40
+# x2.3 # ? For x between 40 and less than 100
+
+x3 <- ifelse(x<20,1,ifelse(x<40,2,3))
+x3
+table(x3)
+
+#This code shows how Petal. Length categories was created from Petal. Length variable of iris data frame
+iris <- within(iris, {
+  Petal.cat <- NA
+  Petal.cat[Petal.Length <1.6] <- "Small"
+  Petal.cat[Petal.Length >=1.6 &
+  Petal.Length<5.1] <- "Medium"
+  Petal.cat[Petal.Length >=5.1] <- "Large"
+})
+#The 1.6=Q1 and 5.1=Q3 were obtained from the “summary” of the Petal.Lenght variable i.e. summary(iris$Petal.Length)
+iris$Petal.cat
+table(iris$Petal.cat)
+```
+
+## Multiple Conditions: If, else if, else if, else if
+
+``` r
+if (temp <= 0) {
+"freezing"}
+else if (temp <= 10) {
+"cold"}
+else if (temp <= 20) {
+"cool"}
+else if (temp <= 30) {
+"warm"}
+else {
+"hot"}
+```
+
+```{r}
+temp_description <- function(temp) {
+  if (temp <= 0) {
+    "freezing"
+  } else if (temp <= 10) {
+    "cold"
+  } else if (temp <= 20) {
+    "cool"
+  } else if (temp <= 30) {
+    "warm"
+  } else {
+    "hot"
+  }
+}
+
+# Example usage:
+temp_description(0)
+temp_description(10)
+temp_description(15)
+temp_description(25)
+temp_description(35)
+```
+
+## Scraping Covid data from Wikipedia and html parsing
+
+```{r}
+library(rvest)
+library(dbplyr)
+
+url <- "https://en.wikipedia.org/wiki/COVID-19_pandemic_in_Nepal#Data"
+
+covid_data <- read_html(url)
+
+table_data <- covid_data %>% html_nodes(".COVID-19_pandemic_data_Nepal_medical_cases table") %>% html_table()
+
+head(table_data)
+
+table_df <- as.data.frame(table_data)
+table_df
+names(table_df)
+
+table_df$Date
+
+head(table_data)
+
+names(table_df)
+
+table.tibble <- tibble::as_tibble(table_df)
+```
+### DUCK DB
+```{r}
+library(duckdb)
+con <- DBI::dbConnect()
+```
+
+
+

@@ -140,3 +140,61 @@ matrix.names <- c("Matrix1", "Matrix2", "Matrix3")
 
 array1 <- array(1:18, dim = c(2,3,3), dimnames = list(row.names, column.names, matrix.names))
 array1
+
+list_example <- list("Name", "Mandip", "Age", 30, c(1,2,3,4,5), TRUE, FALSE)
+list_example[1:2]
+
+row_list <- as.list(row.names)
+class(row_list)
+row_list
+row.names
+
+my_list <- list(name = "Alice", age = 25, city = "New York")
+print(my_list)
+my_list$name
+
+
+employee.db <- list(employees = c("Mandip", "John", "Jane"), position = c("SE", "PO", "PM"))
+employee.db$employees
+employee.db[['employees']]
+
+company.db <- list(companies = c("Apple", "Nvidia", "Meta", "Alphabet"), market_cap = c(3.4, "3.2T", "1.7T", "2.4T"))
+
+company.db.vector <- as.vector(company.db)
+
+class(company.db.vector)
+
+
+
+c <- c(1,2,3,4,5,6,7,8,9)
+class(x)
+is.numeric(x)
+
+x <- c(1L:10L) # integer
+x
+class(x)
+is.numeric(x)
+
+
+x <- 4L * 2.8
+x
+class(x)
+
+class(5L)
+class(2L)
+class(5L / 2L)
+
+class(4L * 5L)
+class(2L + 4L + 5L)
+
+x <- "data"
+nchar(x)
+y <- factor(x) # convert character data to categorical value (encode to numeric)
+y
+class(y)
+nchar(y)
+
+gender <- factor(c("male", "female", "male", "female"))
+typeof(gender)
+attributes(gender)
+unclass(gender)

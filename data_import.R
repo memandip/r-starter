@@ -1,7 +1,7 @@
 # by default the r-studio will set working directory as the root folder
 # /home for mac
 # setting current project as working directory
-# setwd("~/Desktop/projects/r-starter")
+setwd("~/Desktop/projects/r-starter")
 # if working directory is not set to current project, we will have to
 # give full file path to read the file even if file exists in same location
 # df = read.csv("/Users/admin/Desktop/projects/r-starter/covnep_252days.csv")

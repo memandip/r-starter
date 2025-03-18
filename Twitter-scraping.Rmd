@@ -1,0 +1,32 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+```{r}
+library(devtools)
+install_github("geoffjentry/twitteR")
+setwd("~/Desktop/projects/r-starter")
+```
+
+```{r}
+# load tweets from RData file, navigate to environment tab to see the data
+# data will be named rdmTweets
+load("rdmTweets.RData")
+```
+
+```{r}
+tweets <- rdmTweets
+# str(tweets)
+(n.tweet <- length(tweets)) 
+strwrap(tweets[[154]]$text, width = 55) 
+```
+
+```{r}
+getTwitterOAuth()
+tweets <- userTimeline("RDataMining", n = 3200)
+```

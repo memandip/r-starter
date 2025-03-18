@@ -1,0 +1,79 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r, eval=FALSE}
+rD <- RSelenium::rsDriver() # This might throw an error
+```
+
+```{r eval=FALSE}
+binman::list_versions(appname = "chromedriver")
+```
+
+```{r, eval=FALSE}
+# Start Selenium server and browser
+rD <- RSelenium::rsDriver(browser = "chrome",
+                          chromever = "106.0.5249.21")
+# Assign the client to an object
+remDr <- rD[["client"]]
+remDr
+```
+```{r, eval=FALSE}
+remDr$navigate("https://www.google.com/")
+remDr$navigate("https://www.nytimes.com/")
+
+# Use method without () to get a description of what it does
+remDr$navigate
+```
+
+
+```{r}
+# install.packages("RSelenium")
+
+library(RSelenium)
+
+# docker pull selenium/standalone-chromium
+# docker run -d -p 4444:4444 -p 7900:7900 --shm-size="2g" selenium/standalone-chromium:latest
+rD <- rsDriver(browser = "chrome", port = 56239L)
+
+client <- rD$client
+# Open a connection
+client$open()
+
+url <- "https://aqicn.org/city/kathmandu"
+# Navigate to a AQI Website
+client$navigate(url)
+
+elems <- client$findElements(using = "css selector", value = "table")
+
+elems
+
+# api_table_data <- aqi_raw_data %>% html_nodes("table.aqiForecast-table")
+# api_table_data
+```
+
+```{r}
+testScript <- function(remDr) {
+  remDr$open()
+  remDr$navigate("http://www.google.com/ncr")
+  Sys.sleep(2)
+  # highlight the query box
+  remDr$findElement("name", "q")$highlightElement()
+  Sys.sleep(2)
+  # goto rproject
+  remDr$navigate("http://www.r-project.org")
+  # go Back
+  remDr$goBack()
+  # go Forward
+  remDr$goForward()
+  Sys.sleep(2)
+  webElems <- remDr$findElements("css selector", "frame")
+  # highlight the frames
+  lapply(webElems, function(x){x$highlightElement()})
+  
+  remDr$close()
+}
+
+testScript(remDr)
+```

@@ -47,3 +47,9 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+aqi_tables/*
+data/*
+data-export/*
+
+*.out

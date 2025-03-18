@@ -25,3 +25,8 @@ print(class(c_x))
 
 int_cx <- as.numeric(c_x)
 print(int_cx)
+
+# vectors
+fruits <- c("apple", "banana", "orange")
+
+
