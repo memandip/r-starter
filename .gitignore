@@ -51,5 +51,9 @@ rsconnect/
 aqi_tables/*
 data/*
 data-export/*
+covid-data-export/*
+weather_aqi_data/*
 
 *.out
+
+.DS_Store

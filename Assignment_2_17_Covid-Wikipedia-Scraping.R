@@ -1,0 +1,74 @@
+library(tidyverse)
+library(rvest)
+library(jsonlite)
+library(xml2)
+
+setwd("~/Desktop/projects/r-starter/covid-data-export")
+
+url <- "https://en.wikipedia.org/wiki/COVID-19_pandemic_by_country_and_territory"
+table_nodes <- url %>%
+  read_html() %>%
+  html_nodes('.sticky-table-scroll table')
+
+read_parse_table <- function(table_data, remove_first_column = FALSE, remove_last_row = FALSE) {
+  # Select the caption node
+  caption <- table_data %>% html_node("caption")
+  
+  # Remove any style elements within the caption
+  style_nodes <- caption %>% html_elements("style")
+  if (length(style_nodes) > 0) {
+    xml_remove(style_nodes)
+  }
+  
+  # Extract text and remove patterns like [22]
+  title <- caption %>% html_text2() %>% gsub("\\[[0-9]+\\]", "", .)
+  df <- table_data %>% html_table()
+  
+  # Remove first column as some columns only contain empty strings
+  if(remove_first_column) {
+    df <- df[, -1]
+  }
+  
+  # Remove last row as some last rows contains data in different format
+  if (remove_last_row) {
+    df <- df[-nrow(df), ]
+  }
+
+  # Only first column should be string, remove commas, percent and convert to numeric to all other rows
+  df[,-1] <- lapply(df[,-1], function(x) as.numeric(gsub("[,%]", "", x)))
+  
+  # removing pattern [::] from column names
+  names(df) <- gsub("\\[[[:alnum:]]+\\]", "", names(df)) 
+  
+  list(title, df)
+}
+
+table_attibutes = list(
+  list(TRUE, TRUE),
+  list(TRUE, FALSE),
+  list(TRUE, FALSE),
+  list(FALSE, FALSE),
+  list(TRUE, TRUE)
+)
+
+current.df <- read_parse_table(
+  table_nodes[[5]],
+  remove_first_column = table_attibutes[[5]][[1]],
+  remove_last_row = table_attibutes[[5]][[2]]
+)
+
+length(table_nodes)
+
+for(i in 1:length(table_nodes)) {
+  current.data <- read_parse_table(
+      table_nodes[[i]],
+      remove_first_column = table_attibutes[[i]][[1]],
+      remove_last_row = table_attibutes[[i]][[2]]
+  )
+  
+  title <- current.data[[1]]
+  df <- current.data[[2]]
+  write_json(df, paste(trimws(title), ".json"))
+}
+
+setwd("~")

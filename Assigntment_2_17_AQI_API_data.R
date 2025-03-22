@@ -1,0 +1,120 @@
+setwd("~/Desktop/projects/r-starter")
+library(httr)
+library(jsonlite)
+library(dplyr)
+library(tidyverse)
+
+base_url <- "https://api2.waqi.info/api/feed"
+
+get_and_parse_weather_data <- function(id, type) {
+  response <- POST(paste0(base_url, "/@", id, "/", type, ".json"))
+  
+  if(response$status_code != 200) {
+    print("Something went wrong")
+    return;
+  }
+  
+  api_data <- response %>% content()
+  api_data
+}
+
+# Bhaisipati, KTM, Nepal: 10495
+raw_aqi_data <- get_and_parse_weather_data(10495, "aqi")
+current_data <- get_and_parse_weather_data(10495, "now")
+forecast_data <- get_and_parse_weather_data(10495, "forecast")
+
+aqi_data <- raw_aqi_data$rxs$obs[[1]]$msg
+
+generate_daily_data <- function(aqi_data) {
+  daily_data <- aqi_data$forecast$daily
+
+  generate_daily_df <- function(data, type, placeholder) {
+    data.frame(
+      type = placeholder,
+      day = sapply(data[[type]], function(x) x$day),
+      maximum = sapply(data[[type]], function(x) x$min),
+      minimum = sapply(data[[type]], function(x) x$min),
+      average = sapply(data[[type]], function(x) x$avg)
+    )
+  }
+
+  daily_o3_data <- generate_daily_df(daily_data, "o3", "Ozone")
+  daily_pm10_data <- generate_daily_df(daily_data, "pm10", "PM 10")
+  daily_pm25_data <- generate_daily_df(daily_data, "pm25", "PM 2.5")
+  daily_uvi_data <- generate_daily_df(daily_data, "uvi", "UV Index")
+
+  full_daily_data <- rbind(
+    daily_o3_data,
+    daily_pm10_data,
+    daily_pm25_data,
+    daily_uvi_data
+  )
+
+  write_csv(full_daily_data, "./weather_aqi_data/full_daily_data.csv")
+
+  print("Successfully generated full daily data.")
+}
+
+generate_iaqi_data <- function(aqi_data) {
+  iaqi_data <- aqi_data$iaqi
+
+  generate_iaqi_df <- function(data, accessor, placeholder) {
+    data.frame(
+      type = placeholder,
+      value = data[[accessor]]$v,
+      time = as.POSIXct(data[[accessor]]$t)
+    )
+  }
+  
+  full_iaqi_data <- rbind(
+    generate_iaqi_df(iaqi_data, "dew", "Dew Point"),
+    generate_iaqi_df(iaqi_data, "h", "Humidity"),
+    generate_iaqi_df(iaqi_data, "p", "Atmospheric Pressure"),
+    generate_iaqi_df(iaqi_data, "pm1", "PM 1"),
+    generate_iaqi_df(iaqi_data, "pm10", "PM 10"),
+    generate_iaqi_df(iaqi_data, "pm25", "PM 2.5"),
+    generate_iaqi_df(iaqi_data, "t", "Temperature(°C)"),
+    generate_iaqi_df(iaqi_data, "w", "Wind Speed"),
+    generate_iaqi_df(iaqi_data, "wg", "Wind gust Speed")
+  )
+  
+  write_csv(full_iaqi_data, "./weather_aqi_data/full_iaqi_data.csv")
+  
+  print("Successfully generated iaqi data.")
+}
+
+generate_observations_data <- function(aqi_data) {
+  iaqi_data <- aqi_data$obs
+
+  generate_iaqi_df <- function(data, accessor, placeholder) {
+    data.frame(
+      type = placeholder,
+      start_time = as.POSIXct(data[[accessor]]$s),
+      time_difference = data[[accessor]]$d,
+      error = data[[accessor]]$e,
+      scaling_factor = data[[accessor]]$m
+    )
+  }
+  
+  full_obs_data <- rbind(
+    generate_iaqi_df(iaqi_data, "dew", "Dew Point"),
+    generate_iaqi_df(iaqi_data, "h", "Humidity"),
+    generate_iaqi_df(iaqi_data, "p", "Atmospheric Pressure"),
+    generate_iaqi_df(iaqi_data, "pm1", "PM 1"),
+    generate_iaqi_df(iaqi_data, "pm10", "PM 10"),
+    generate_iaqi_df(iaqi_data, "pm25", "PM 2.5"),
+    generate_iaqi_df(iaqi_data, "t", "Temperature(°C)"),
+    generate_iaqi_df(iaqi_data, "w", "Wind Speed"),
+    generate_iaqi_df(iaqi_data, "wg", "Wind gust Speed")
+  )
+  
+  write_csv(full_obs_data, "./weather_aqi_data/full_obs_data.csv")
+  
+  print("Successfully generated observations data.")
+}
+
+generate_daily_data(aqi_data)
+generate_iaqi_data(aqi_data)
+generate_observations_data(aqi_data)
+
+setwd("~")

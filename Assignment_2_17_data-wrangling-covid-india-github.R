@@ -1,0 +1,44 @@
+setwd("~/Desktop/projects/r-starter")
+
+library(tidyverse)
+library(jsonlite)
+library(dplyr)
+
+# load json data
+df <- fromJSON("./data/2020-03-23_23.json", flatten = TRUE)
+
+raw_data <- df$rawPatientData
+
+raw_data$reportedOn <- as.Date(raw_data$reportedOn, format = "%d/%m/%Y")
+
+# select rows
+filtered_data <- select(raw_data, patientId, reportedOn, ageEstimate, gender, state, status)
+
+# set each character data column to lowercase
+filtered_data <- mutate(filtered_data, across(where(is.character), tolower))
+
+# convert ageEstimate character type to numeric type
+filtered_data$ageEstimate <- trimws(filtered_data$ageEstimate) %>% as.numeric(filtered_data$ageEstimate)
+
+# replace numeric NA values with median value
+filtered_data <-  mutate(filtered_data, across(where(is.numeric), ~replace_na(., median(., na.rm = TRUE))))
+
+summarize_data <- function(data) {
+    data %>% summarise(
+      male = sum(gender == "male", na.rm = TRUE),
+      female = sum(gender == "female", na.rm = TRUE),
+      recovered = sum(status == "recovered", na.rm = TRUE),
+      hospitalized = sum(status == "hospitalized", na.rm = TRUE),
+      deceased = sum(status == "deceased", na.rm = TRUE),
+      migrated = sum(status == "migrated", na.rm = TRUE),
+      total = n(),
+    )
+}
+
+day_wise_data <- filtered_data %>% group_by(reportedOn) %>% summarize_data
+daily_state_wise_data <- filtered_data %>% group_by(reportedOn, state) %>% summarize_data
+
+write_csv(day_wise_data, "./data-export/day_wise_data.csv")
+write_csv(daily_state_wise_data, "./data-export/daily_state_wise_data.csv")
+
+setwd("~")

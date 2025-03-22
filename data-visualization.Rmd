@@ -1,0 +1,246 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+gd <- as.data.frame(VADeaths)
+
+str(gd)
+
+head(gd)
+```
+
+```{r}
+barplot(gd$`Rural Male`)
+```
+
+```{r}
+barplot(
+  gd$`Rural Male`,
+  names.arg = c("50-54", "55-59", "60-64", "65-69", "70-74"),
+  main = "Death Rate among Rural Male in Virginia",
+  xlab = "Age Group",
+  ylab = "Rate"
+)
+```
+
+```{r}
+barplot(
+  gd$`Rural Male`,
+  horiz = T,
+  col = "skyblue",
+  border = "red",
+  names.arg = c("50-54", "55-59", "60-64", "65-69", "70-74"),
+  main = "Death Rate among Rural Male in Virginia",
+  xlab = "Age Group",
+  ylab = "Rate"
+)
+```
+
+```{r}
+barplot(
+  gd$`Rural Male`,
+  horiz = T,
+  col = "skyblue",
+  border = "red",
+  names.arg = c("50-54", "55-59", "60-64", "65-69", "70-74"),
+  main = "Death Rate among Rural Male in Virginia",
+  xlab = "Age Group",
+  ylab = "Rate",
+  xlim = c(0,70),
+  cex.axis = 0.80
+)
+```
+
+# Stacked Bar diagram
+
+```{r}
+# Errror
+# barplot(
+#   gd,
+#   col=c("lightblue", "mistyrose", "lightcyan", "lavender", "cornsilk"),
+#   legend = rownames(VADeaths)
+# )
+
+gdm <- as.matrix(gd)
+
+colors <- c("lightblue", "mistyrose", "lightcyan", "lavender", "cornsilk")
+
+barplot(gdm, col = colors)
+
+barplot(
+  gdm,
+  col=colors,
+  legend = rownames(VADeaths)
+)
+```
+
+```{r}
+barplot(
+  gdm,
+  col=colors,
+  legend = rownames(VADeaths),
+  beside = T
+)
+legend("topright", legend = rownames(VADeaths))
+```
+
+## Pie Chart
+
+```{r}
+gd <- as.data.frame(VADeaths)
+
+pie(
+  gd$`Urban Male`,
+  labels = rownames(gd),
+  radius = 1,
+  
+)
+```
+
+### Pie Charts with Percentage
+
+```{r}
+gd$piePercent <- round(100*gd$`Rural Male`/sum(gd$`Rural Male`))
+pie(
+  gd$`Rural Male`,
+  labels = paste(gd$piePercent, "%"),
+  main = "% Deaths by Age groups for Rural Male",
+  col = rainbow(length(gd$`Rural Male`))
+)
+legend(
+  "topright",
+  c("50-54", "55-59", "60-64", "65-69", "70-74"),
+  cex = 0.8,
+  fill = rainbow(length(gd$`Rural Male`))
+)
+```
+
+### Air Passengers data
+
+```{r}
+AirPassengers
+plot(AirPassengers)
+```
+
+### Histogram
+
+```{r}
+gdcar <- as.data.frame(cars)
+str(gdcar)
+hist(gdcar$speed, col = "steelblue")
+
+# add number of breaks
+hist(gdcar$speed, col = "steelblue", breaks = 10)
+
+dens <- density(cars$speed)
+plot(dens, frame=FALSE, col="steelblue", main="Desnsity Plot of MPG")
+```
+
+## Q-Q plot with Q-Q line
+
+```{r}
+# Normal Q-Q plot
+qqnorm(gdcar$speed)
+
+# Normal Q-Q line
+qqline(gdcar$speed, col="red")
+```
+
+### Scatterplot
+
+-   Speed = x-axis = independent variable
+
+```{r}
+plot(gdcar$speed, gdcar$dist)
+```
+
+### Boxplot: Easiest way to detect outliers
+
+```{r}
+boxplot(mpg ~ cyl, data = mtcars)
+
+boxplot(
+  mpg ~ cyl,
+  data = mtcars,
+  xlab = "Number of cylinders",
+  ylab = "Miles per Gallon",
+  main = "Mileage Data"
+)
+
+qqnorm(mtcars$mpg)
+qqline(mtcars$mpg, col="red")
+```
+
+```{r}
+str(mtcars)
+
+hist(mtcars$mpg)
+```
+
+```{r}
+df <- as.data.frame(mtcars)
+f.cyl <- as.factor(df$cyl)
+
+bpd <- table(df$cyl)
+
+barplot(bpd)
+```
+
+```{r}
+summary(mtcars$mpg)
+range = range()
+
+R = max(mtcars$mpg) - min(mtcars$mpg)
+l = round(sqrt(R))
+breaks = seq(10, 35, by=l)
+breaks
+
+mpg.bin <- cut(df$mpg, breaks, labels=c("10-15", "15-20", "20-25", "25-30", "30-35"))
+mpg.bin
+
+table(mpg.bin)
+
+barplot(table(mpg.bin))
+```
+
+## Histogram and abline for mean of "mpg"
+
+```{r}
+hist(df$mpg, col="steelblue", main="Histogram of MPG", xlab="MPG Categories")
+abline(v=mean(df$mpg), lwd=3, lty=2)
+# v = vertical "albine"
+# h = horizontal "albine"
+# lwd = line width (3=3 times wide)
+# lty = line types (2=2 dashed line), 1=solid, 2=dashed, 3=dotted line, 4=dot an dashed, 5 = long dash, 6=two dashed
+```
+
+```{r}
+qqnorm(mtcars$mpg)
+qqline(mtcars$mpg, col="red")
+```
+
+```{r}
+hist(df$mpg, col="steelblue", main="Histogram of MPG", xlab="MPG Categories")
+abline(v=mode(df$mpg), lwd=3, lty=2)
+```
+
+```{r}
+hist(df$mpg, col="steelblue", main="Histogram of MPG", xlab="MPG Categories")
+max_value = 
+# Add a vertical line to show the mode
+abline(v = mode_value, 
+       col = "red", 
+       lwd = 2, 
+       lty = 2)
+
+# Add legend
+legend("topright", legend = paste("Mode:", mode_value), 
+       col = "red", lty = 2, lwd = 2)
+```
+
+## Correlation
+
+-   linear - Pearson correlation cofficient
+-   non-linear - Spearman Rank correlation cofficient

@@ -1,0 +1,25 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+### Multigraph in Single Window
+
+```{r}
+# Random Data
+x <- rnorm(500)
+y <- x + rnorm(500)
+
+# Data
+my_ts <- ts(
+  matrix(rnorm(500), nrow = 500, ncol=1),
+  start=c(1950,1),
+  frequency = 12
+)
+
+my_dates <- seq(as.Date("2005/1/1"), by="month", length = 50)
+
+my_factor <- factor(mtcars$cyl)
+
+fun <- function(x) x ^ 2
+```
