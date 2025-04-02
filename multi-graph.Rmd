@@ -23,3 +23,93 @@ my_factor <- factor(mtcars$cyl)
 
 fun <- function(x) x ^ 2
 ```
+
+```{r}
+# Create multi window for graphs in 2 rows and 3  columns
+par(mfrow=c(2,3))
+plot(x,y, main="Scatterplot")
+plot(my_factor, main="Barplot")
+plot(my_factor, rnorm(32), main="Boxplot")
+plot(my_ts, main="Time Series")
+plot(my_dates, rnorm(50), main="Time Based Plot")
+plot(fun, 0,10, main="Plot a function")
+```
+
+```{r}
+# Set graph in default mode
+par(mfrow=c(1,1))
+plot(x,y, main="Scatterplot")
+abline(a=0,b=1, col="red")
+```
+
+
+```{r}
+# Correlation matrix plot
+plot(trees[,1:3], main="Correlation Plot")
+```
+
+```{r}
+j <- 1:20
+k <- j
+
+par(mfrow=c(2,3))
+
+plot(j,k, type = 'l', main = "type = 'l'")
+plot(j,k, type = 's', main = "type = 's'")
+plot(j,k, type = 'p', main = "type = 'p'")
+
+plot(j,k, type = 'b', main = "type = 'b'")
+plot(j,k, type = 'h', main = "type = 'h'")
+plot(j,k, type = 'o', main = "type = 'o'")
+
+par(mfrow=c(1,1))
+```
+```{r}
+plot(
+  x,
+  y,
+  
+)
+```
+
+```{r}
+# Example: logy and logx transformation makes a non-lear to linear!
+
+x <- 1:50
+y <- x ^ 3
+logx <- log(x)
+logy <- log(y)
+
+par(mfrow=c(2,2))
+plot(x,y)
+plot(x,logy)
+plot(logx, y)
+plot(logx, logx)
+
+par(mfrow=c(1,1))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

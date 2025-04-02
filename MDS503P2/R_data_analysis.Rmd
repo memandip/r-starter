@@ -1,0 +1,140 @@
+---
+title: "Multiple Response Analysis"
+author: "Mandip Chaudhary"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Multiple Response Frequencies
+
+### Load Libraries
+```{r}
+library(knitr)
+library(rmarkdown)
+library(htmlTable)
+library(dplyr)
+library(tidyr)
+library(readxl)
+```
+
+### Load Data
+```{r}
+setwd("~/Desktop/projects/r-starter")
+# Replace 'your_dataset.csv' with the actual dataset file name
+df <- read_xlsx("./MR_Drugs.xlsx")  # Ensure the dataset is in the working directory
+df
+```
+
+### Process Multiple Response Data
+```{r}
+# Define multiple response columns
+income_mr_cols <- c("inco1", "inco2", "inco3", "inco4", "inco5", "inco6", "inco7")
+
+# Convert wide format to long format
+income_long <- df %>%
+  select(all_of(income_mr_cols)) %>%
+  pivot_longer(cols = everything(), names_to = "Income_MR", values_to = "Response") %>%
+  filter(Response == 1)  # Keep only selected responses
+
+# Compute frequencies
+income_freq <- income_long %>%
+  group_by(Income_MR) %>%
+  summarise(N = n()) %>%
+  mutate(Percent = round((N / sum(N)) * 100, 1))
+
+# Count unique cases
+total_cases <- n_distinct(df$id)  # Ensure there is a unique respondent ID column
+
+# Compute percent of cases
+income_freq <- income_freq %>%
+  mutate(Percent_Cases = round((N / total_cases) * 100, 1))
+
+# Add Total row
+income_freq <- income_freq %>%
+  bind_rows(tibble(
+    Income_MR = "Total",
+    N = sum(income_freq$N),
+    Percent = 100.0,
+    Percent_Cases = round(sum(income_freq$Percent_Cases), 1)
+  ))
+```
+
+### Display Frequency Table with htmlTable
+```{r}
+htmlTable(
+  income_freq,
+  rnames = FALSE,  # Hide row names
+  header = c("", "N", "Percent", "Percent_Cases"),  # Correct column names
+  cgroup = c("", "Responses", ""),  # Group headers
+  n.cgroup = c(1, 2, 1),  # Specify how many columns each header spans
+  align = "lccc",  # Align text in columns
+  css.table = "margin: 20px; padding: 10px; color: black; border: 1px solid black; width: 50%;",  # Add margin and padding to the table element
+  css.cell = "padding: 15px;"  # Add padding to each cell
+)
+```
+
+## Multiple Response Analysis
+```{r}
+library(foreign)
+setwd("/Users/admin/Desktop/projects/r-starter")
+# Create the data for the second table: "My friends will think I'm stupid for not being able to cope with SPSS"
+friends_spss <- read.spss("./Mandip\ -\ SAQ8.sav", to.data.frame = TRUE)
+
+# Combine all responses into a single vector
+all_responses <- unlist(friends_spss)
+
+# Get unique values and their frequencies
+unique_values <- unique(all_responses)
+frequency <- table(all_responses)
+
+# Calculate total number of responses
+total_responses <- length(all_responses)
+
+# Calculate percentage
+percent <- round((frequency / total_responses) * 100, 1)
+
+# Valid percent is the same as percent in this case (no missing values assumed)
+valid_percent <- percent
+
+# Calculate cumulative percent
+cumulative_percent <- round(cumsum(percent), 1)
+
+# Create the result data frame
+result_table <- data.frame(
+  Valid = names(frequency),
+  Frequency = as.numeric(frequency),
+  Percent = as.numeric(percent),
+  "Valid Percent" = as.numeric(valid_percent),
+  "Cumulative Percent" = as.numeric(cumulative_percent)
+)
+
+# Add a "Total" row
+total_row <- data.frame(
+  Valid = "Total",
+  Frequency = total_responses,
+  Percent = 100.0,
+  "Valid Percent" = 100.0,
+  "Cumulative Percent" = 100.0
+)
+
+# Combine the result table and the total row
+final_result <- rbind(result_table, total_row)
+
+# Generate HTML for the second table
+htmlTable(
+  final_result,
+  caption = "My friends will think I'm stupid for not being able to cope with SPSS",
+  rnames = FALSE,
+  align = "lccc",  # Align text in columns
+  css.table = "margin: 20px; padding: 10px; color: black; border: 1px solid black; width:100%;",  # Add margin and padding to the table element
+  css.cell = "padding: 15px;border: 1px solid black;" , # Add padding to each cell  align = "lccc",  # Align text in columns
+  cell.header = "padding: 15px;"  # Add padding to each cell
+)
+```
+

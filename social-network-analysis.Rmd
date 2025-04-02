@@ -1,0 +1,98 @@
+---
+title: "Social Network Analysis"
+output: html_notebook
+---
+
+```{r}
+library(igraph)
+g <- graph(c(1,2))
+
+plot(g, vertex.color="green", vetex.size=40, edge.color="red", edge.size=20)
+```
+
+```{r}
+g <- graph(c(1,2, 2,3, 3,4, 4,1))
+plot(g, vertex.color="green", vetex.size=40, edge.color="red", edge.size=20)
+```
+
+```{r}
+g <- graph(c(1,2, 2,3, 3,4, 4,1), directed = F)
+plot(g, vertex.color="green", vetex.size=40, edge.color="red", edge.size=20)
+```
+
+## SNA Basics: Adding related and unrelated nodes
+```{r}
+g <- graph(c(1,2,2,3,3,4,4,1), directed = F, n=7)
+
+plot(g, vertex.color="green", vetex.size=40, edge.color="red", edge.size=20)
+
+g[]
+```
+# SNA Basics: Defining nodes with text data
+```{r}
+g1 <- graph(c("Sita", "Ram", "Ram", "Rita", "Rita", "Sita","Sita", "Rita", "Anju", "Ram"))
+?plot
+plot(g1, vertex.color="green", vetex.size=100, edge.color="red", edge.size=20)
+
+degree(g1, mode="all")
+degree(g1, mode="in")
+degree(g1, mode="out")
+diameter(g1, directed = F, weights = NA)
+```      
+
+## SNA Basics: Defining edge density of "g1"
+```{r}
+# Edge density
+edge_density(g1, loops = F)
+
+# Edge density
+ecount(g1)/(vcount(g1)*(vcount(g1)-1))
+
+# Reciprocity of directed graph
+# Percentage reciprocated ties
+reciprocity(g1)
+# Total edges = 5, Tied edges = 2, Reciprocity = 2/5 = 0.4
+```
+
+## SNA Basics: Getting closeness of "g1"
+```{r}
+closeness(g1, mode="all", weights = NA)
+```
+
+## SNA Basics: Getting betweenness of "g1"
+
+```{r}
+betweenness(g1, directed = F, weights = NA)
+edge_betweenness(g1, directed = F, weights = NA)
+```
+
+## SNA with "SNA_School.csv" data file
+```{r}
+setwd("~/Desktop/projects/r-starter")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
