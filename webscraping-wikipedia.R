@@ -1,5 +1,5 @@
 library(rvest)
-library(dbplyr)
+# library(dbplyr)
 
 url <- "https://en.wikipedia.org/wiki/COVID-19_pandemic_in_Nepal#Data"
 

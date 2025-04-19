@@ -1,0 +1,38 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+```{r}
+# Import text file saved in computer
+txt <- file("some_file.txt", "r")
+txt.content <- readLines(txt)
+class(txt.content)
+```
+
+```{r}
+library(readr)
+data <- read_file("some_file.txt")
+data
+```
+
+```{r}
+num_val <- 5.5
+int_val <- 5L
+class(num_val)
+# class(int_val)
+```
+
+```{r}
+date_val <- as.Date("2023-10-01")
+date_with_time <- as.POSIXct("2023-10-01 11:00:11")
+date_with_time
+
+```
+
+```{r}
+```

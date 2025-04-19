@@ -1,0 +1,141 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+## Shapiro-Wilk normality test for mpg and wt variables
+
+```{r}
+shapiro.test(mtcars$mpg)
+shapiro.test(mtcars$wt)
+```
+## Interpretation
+- The p-value for the Shapiro-Wilk test for both `mpg` and `wt` is less than 0.05, indicating that the null hypothesis of normality can be rejected. This suggests that the distributions of both variables are not normally distributed.
+
+
+## simple linear regression between MPG and WT variables
+
+```{r}
+data("mtcars")
+lm_model <- lm(mpg ~ wt, data = mtcars)
+summary(lm_model)
+```
+
+## Interpretation
+- The linear regression model shows that there is a significant negative relationship between weight (`wt`) and miles per gallon (`mpg`). The coefficient for `wt` is -5.344, indicating that for each unit increase in weight, the miles per gallon decreases by approximately 5.344 units. The p-value for the `wt` coefficient is less than 0.05, suggesting that this relationship is statistically significant.
+
+
+
+## BLUE (Best linear unbiased estimator) properties of the OLS estimator
+- The OLS estimator is BLUE if the following assumptions are met:
+  - Linearity: The relationship between the independent and dependent variables is linear.
+    - Describe Linearity in simple terms
+      - The relationship between the independent variable (weight) and the dependent variable (miles per gallon) is linear, meaning that as the weight increases, the miles per gallon decreases in a straight-line fashion.
+  - Independence: The residuals (errors) are independent.
+    - Describe Independence in simple terms
+      - The residuals (the differences between the observed and predicted values) are independent of each other, meaning that the error for one observation does not depend on the error for another observation.
+  - Homoscedasticity: The residuals have constant variance.
+  - Normality: The residuals are normally distributed.
+    - Describe Normality in simple terms
+      - The residuals (the differences between the observed and predicted values) are normally distributed, meaning that they follow a bell-shaped curve when plotted.
+
+
+"Residual" analysis or the LINE tests:
+- L = Linearity
+- I = Independence
+- N = Normality
+- E = Equal variance (Homoscedasticity)
+
+## Linearity of residuals:
+
+
+```{r}
+plot(lm_model, which=1, col=c("blue"))
+```
+
+```{r}
+summary(lm_model$residuals)
+```
+
+
+## Independence of residuals:
+```{r}
+acf(lm_model$residuals, main="ACF of Residuals")
+```
+
+```{r}
+library(car)
+durbinWatsonTest(lm_model)
+```
+
+
+p < 0.05 means there is no independence
+- If this is time series you cannot do prediction but if cross sectional data move ahead.
+
+## Q-Q Plot
+```{r}
+plot(lm_model, which=2, col=c("blue"))
+```
+
+```{r}
+shapiro.test(lm_model$residuals)
+```
+## Calculation (Confirmative)
+- The p-value for the Shapiro-Wilk test for the residuals is less than 0.05, indicating that the null hypothesis of normality can be rejected. This suggests that the residuals are not normally distributed.
+
+
+## Scatterplot
+```{r}
+plot(lm_model, which=3, col=c("blue"))
+```
+
+```{r}
+library(lmtest)
+bptest(lm_model)
+```
+
+## Calculation (Confirmative)
+- If the p-value is less than 0.05, it indicates that the null hypothesis of homoscedasticity can be rejected. This suggests that the residuals do not have constant variance, indicating a violation of the homoscedasticity assumption.
+
+- If BLUE is correct and everything except equal variance is correct then we use weighted least square regression.
+
+
+```{r}
+plot(lm_model, which=4, col=c("blue"))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,175 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+## Example 1: Test the claim that mean of the miles per gallon variable is 20 using "mtcars" data in R!
+### Hypothesis
+- Null hypothesis: H0: μ = 20
+
+```{r}
+mu0 <- 20
+sigma <- 6
+xbar <- mean(mtcars$mpg)
+n <- length(mtcars$mpg)
+```
+
+```{r}
+z <- sqrt(n) * (xbar - mu0) / sigma
+p_value <- 2 * (1 - pnorm(abs(z)))
+
+print(p_value)
+
+p_value <- 2 * pnorm(z)
+
+print(p_value)
+```
+
+## Saffrio test 
+```{r}
+shapiro.test(mtcars$mpg)
+```
+
+## T-test
+
+```{r}
+t.test(mtcars$mpg, mu = mu0)
+```
+
+```{r}
+t.test(mtcars$mpg, mu = 10)
+```
+
+```{r}
+t.test(mtcars$mpg, mu = 30)
+```
+
+
+```{r}
+?mtcars
+```
+
+## Normality test on am variable of mtcars dataset
+```{r}
+var.test(mpg ~ am,data=mtcars)
+```
+
+```{r}
+with(mtcars, shapiro.test(mpg[am==0]))
+```
+```{r}
+with(mtcars, shapiro.test(mpg[am==1]))
+```
+
+```{r}
+var.test(mpg~am, data=mtcars)
+```
+```{r}
+t.test(mpg~am, var.equal=T, data=mtcars)
+```
+
+```{r}
+summary(lm(mpg~am, data=mtcars))
+```
+
+```{r}
+plot(mtcars$am, mtcars$mpg)
+```
+
+```{r}
+cor.test(mtcars$mpg, mtcars$am)
+```
+
+Linear regression in extension on t-test.
+Logistic regression is an extension of Chi-square test
+
+CHI Square test Assumptions
+- The sample size of the dataset must be greater than 50.
+- The continuity correction is done for normal approximation for binomial distribution.
+
+```{r}
+table(mtcars$gear)
+```
+
+
+## 1-way ANOVA assumptions checks:
+
+### 1. Normality by categories
+
+```{r}
+with(mtcars, shapiro.test(mpg[gear==3]))
+```
+```{r}
+with(mtcars, shapiro.test(mpg[gear==4]))
+```
+```{r}
+with(mtcars, shapiro.test(mpg[gear==5]))
+```
+
+### 2. Equal variabce among categories:
+```{r}
+library(car)
+leveneTest(mpg~factor(gear), data=mtcars)
+```
+## Multiple proportion test
+
+```{r}
+table(mtcars$gear)
+```
+
+```{r}
+prop.test(x=c(15,12,5), n=c(32, 32, 32))
+```
+```{r}
+prop.test(x=c(15,12,5), n=c(32, 32, 32), correct = F)
+```
+```{r}
+pairwise.prop.test(x=c(15,12,5), n=c(32, 32, 32), correct = F)
+```
+
+```{r}
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
