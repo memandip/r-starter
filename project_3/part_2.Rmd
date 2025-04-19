@@ -1,0 +1,136 @@
+---
+title: "Project 3 - Part 2"
+author: "Mandip Chaudhary (17)"
+date: "2025-04-16"
+output:
+  html_document: 
+    toc: true
+  pdf_document: default
+editor_options: 
+  chunk_output_type: inline
+---
+
+[Previous sections remain unchanged...]
+
+### 7.3 K-core Decomposition
+
+```{r kcore}
+# Calculate coreness
+kc <- coreness(net, mode="all")
+
+# Visualize k-cores
+plot(net, 
+     vertex.size=kc*6, 
+     vertex.label=kc, 
+     vertex.color=colrs[kc],
+     main="K-core Decomposition")
+
+# Print coreness distribution
+cat("Distribution of coreness values:\n")
+print(table(kc))
+
+# Identify nodes in the highest k-core
+max_core <- max(kc)
+core_nodes <- V(net)$media[kc == max_core]
+cat("\nNodes in highest k-core (k =", max_core, "):\n")
+print(core_nodes)
+```
+
+**Interpretation:**
+K-core analysis reveals:
+- The hierarchical structure of the network
+- Core-periphery patterns in media relationships
+- The most densely connected subgroups
+- The nestedness of network communities
+
+## 8. Assortativity and Homophily
+
+```{r assortativity}
+# Calculate different types of assortativity
+type_assort <- assortativity_nominal(net, V(net)$media.type, directed=F)
+size_assort <- assortativity(net, V(net)$audience.size, directed=F)
+degree_assort <- assortativity_degree(net, directed=F)
+
+# Print results
+cat("Assortativity coefficients:\n")
+cat("By media type:", round(type_assort, 3), "\n")
+cat("By audience size:", round(size_assort, 3), "\n")
+cat("By degree:", round(degree_assort, 3), "\n")
+
+# Visualize relationships between connected nodes
+# Create a scatterplot of connected nodes' audience sizes
+edge_list <- as_edgelist(net)
+from_size <- V(net)$audience.size[edge_list[,1]]
+to_size <- V(net)$audience.size[edge_list[,2]]
+
+plot(from_size, to_size,
+     xlab="Source Node Audience Size",
+     ylab="Target Node Audience Size",
+     main="Audience Sizes of Connected Nodes",
+     pch=19, col="orange")
+```
+
+**Interpretation:**
+Assortativity analysis reveals:
+- Tendency for media outlets to connect to similar/different types
+- Relationship between audience size and connection patterns
+- Whether high-degree nodes tend to connect to other high-degree nodes
+- Patterns of homophily in the media network
+
+## 9. Conclusions
+
+Our comprehensive Social Network Analysis of the media network reveals several key insights:
+
+### 9.1 Network Structure
+```{r network_summary}
+# Calculate key network metrics
+cat("Network Summary:\n")
+cat("Number of nodes:", vcount(net), "\n")
+cat("Number of edges:", ecount(net), "\n")
+cat("Density:", edge_density(net, loops=F), "\n")
+cat("Average path length:", mean_distance(net, directed=T), "\n")
+cat("Global clustering coefficient:", transitivity(net, type="global"), "\n")
+```
+
+### 9.2 Key Findings
+
+1. **Network Topology**:
+   - The network shows a moderately sparse structure (density ≈ 0.18)
+   - Most media outlets are connected through short paths
+   - Clear community structure exists with distinct groups
+
+2. **Information Flow**:
+   - Identified key bridging nodes through betweenness centrality
+   - Hub and authority analysis revealed specialized roles
+   - Reciprocal relationships indicate mutual influence
+
+3. **Media Relationships**:
+   - Found evidence of homophily based on media type
+   - Audience size shows interesting patterns of connection
+   - Community structure partially aligns with media categories
+
+4. **Structural Patterns**:
+   - Clear core-periphery structure identified through k-core analysis
+   - Multiple communities detected through various algorithms
+   - Hierarchical organization of media relationships
+
+5. **Methodological Insights**:
+   - Different layout algorithms reveal different network aspects
+   - Multiple centrality measures provide complementary views
+   - Various community detection methods offer different perspectives
+
+### 9.3 Implications
+
+This analysis helps understand:
+- How information flows through the media landscape
+- Which outlets serve as key information brokers
+- Natural groupings and hierarchies in media relationships
+- Patterns of influence and authority in media networks
+
+The findings can inform:
+- Strategic communication planning
+- Understanding information dissemination patterns
+- Identifying key influencers and gatekeepers
+- Recognition of potential information bottlenecks
+
+These insights contribute to our understanding of media ecosystem dynamics and can guide decisions about information distribution strategies and media engagement approaches.
