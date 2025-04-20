@@ -1,0 +1,722 @@
+---
+title: "09_Project3_Part2"
+author: "Bishal Khand Thakuri"
+date: "2025-04-20"
+output:
+  pdf_document :
+    keep_tex: true
+  html_document:
+    df_print: paged
+header-includes:
+ \usepackage{float}
+ \floatplacement{figure}{H}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Part2
+
+**Use this link https://kateto.net/netscix2016.html to replicate all the SNA results and interpret them carefully.**
+
+
+## Reading the datasets::
+
+First data bases consists of Network of hyperlinks and news sources among media organisations.
+
+```{r}
+nodes <- read.csv("Dataset1-Media-Example-NODES.csv", header=T, as.is=T)
+
+links <- read.csv("Dataset1-Media-Example-EDGES.csv", header=T, as.is=T)
+
+head(nodes)
+
+head(links)
+
+nrow(nodes); length(unique(nodes$id))
+
+nrow(links); nrow(unique(links[,c("from", "to")]))
+
+```
+Remedying the 3 non unique links.
+
+```{r}
+links <- aggregate(links[,3], links[,-3], sum)
+
+links <- links[order(links$from, links$to),]
+
+colnames(links)[4] <- "weight"
+
+rownames(links) <- NULL
+```
+
+
+Database 2 consists of network of links between media venues and consumers:
+
+```{r}
+nodes2 <- read.csv("Dataset2-Media-User-Example-NODES.csv", header=T, as.is=T)
+
+links2 <- read.csv("Dataset2-Media-User-Example-EDGES.csv", header=T, row.names=1)
+
+head(nodes2)
+
+head(links2)
+
+```
+Links is an adjacency matris. So, we make it a matrix:
+
+```{r}
+links2 <- as.matrix(links2)
+
+dim(links2)
+
+dim(nodes2)
+```
+Nodes has 30 values, first 10 of media companies and other 20 of the users.
+
+
+## IGraph
+
+```{r}
+library(igraph)
+
+net <- graph_from_data_frame(d=links, vertices=nodes, directed=T) 
+```
+```{r}
+E(net)       # The edges of the "net" object
+
+V(net)       # The vertices of the "net" object
+```
+
+```{r}
+plot(net, edge.arrow.size=.4,vertex.label=NA)
+```
+We start by removing loops::
+```{r}
+net <- simplify(net, remove.multiple = F, remove.loops = T) 
+```
+
+We convert it into graph using the links matrix.
+
+```{r}
+net2 <- graph_from_biadjacency_matrix(links2)
+
+table(V(net2)$type)
+```
+Plot of Media stations
+```{r}
+net2.bp <- bipartite.projection(net2)
+plot(net2.bp$proj1, vertex.label.color="black", vertex.label.dist=1,
+     vertex.size=7, vertex.label=nodes2$media[!is.na(nodes2$media.type)])
+```
+**Interpretation**::We observe the hyperlinks connection of the news channel and observe how they form clusters among each other in the graph like BBC, NYT, USAT, LA Times are connected by BBC. Similarly, CNN, FOX, MSNBC are clustered together. It means they have more hyperlinks to each other and they may have similar methods of news and media or are more similar to each other than others. Bipartite graphs does oversimplification and it should only be used for exploratory relations.
+
+
+Plot of Users
+```{r}
+plot(net2.bp$proj2, vertex.label.color="black", vertex.label.dist=1,
+     vertex.size=7, vertex.label=nodes2$media[ is.na(nodes2$media.type)])
+```
+**Interpretation**:: We observe the graph network of users and how they relate with each other. SInce they are bipartite, it may not give the whole picture.
+
+
+## Plotting networks with igraph
+
+For Database 1, we allow curved arrow as well.
+
+```{r}
+plot(net, edge.arrow.size=.4, edge.curved=.1)
+```
+
+In the above graph, we now put name of media as well.
+
+```{r}
+set.seed(42)
+
+plot(net, edge.arrow.size=.2, edge.curved=0,
+     vertex.color="orange", vertex.frame.color="#555555",
+     vertex.label=V(net)$media, vertex.label.color="black",
+     vertex.label.cex=.7) 
+```
+**Interpretation**:: Here, we observe the hyperlinks connections between different media orgs. Here,we see the relationship in more depth which was oversimplified by bipartite graph. We observe the reciprocal and unidirected relations between different media orgs. Wall street journal seems to have many hyperlinks to it from other websites. Google, Yahoo, Reuters seems to direct links to other sites than links directed to itself. 
+
+
+
+
+
+We now change the size of node depending on the number of audience in the graph.
+
+```{r}
+# Generate colors based on media type:
+
+colrs <- c("gray50", "tomato", "gold")
+
+V(net)$color <- colrs[V(net)$media.type]
+
+# Set node size based on audience size:
+
+V(net)$size <- V(net)$audience.size*0.7
+
+# The labels are currently node IDs.
+
+# Setting them to NA will render no labels:
+
+V(net)$label.color <- "black"
+
+V(net)$label <- NA
+
+# Set edge width based on weight:
+
+E(net)$width <- E(net)$weight/6
+
+#change arrow size and edge color:
+
+E(net)$arrow.size <- .2
+
+E(net)$edge.color <- "gray80"
+
+E(net)$width <- 1+E(net)$weight/12
+
+plot(net)
+```
+
+We have the above graph saved in net so now, we plot the above and give legend to each color which represent different types of media medium.
+
+```{r}
+plot(net) 
+
+legend("bottomleft", c("Newspaper","Television", "Online News"), pch=21, col="#777777", pt.bg=colrs, pt.cex=2, cex=.8, bty="n", ncol=1)
+```
+
+**Interpretation**:: We observe how television had highest number of audience whereas newspapers and online news had less than television. We also notice however that one newpaper had audience as big as television.
+
+
+
+```{r}
+plot(net, vertex.shape="none", vertex.label=V(net)$media, 
+     vertex.label.font=2, vertex.label.color="gray40",
+     vertex.label.cex=.7, edge.color="gray85")
+```
+
+
+## Network Layouts and different types of layouts
+
+Here, we mainly observe and study different ways we can layout a network. 
+
+- We observe that if we do not save the layouts, each run will result in different layouts.
+- Some of these layouts may not be useful for large data but work well for smaller data for visualization like the circle, sphere, line layouts.
+- Trying different layouts will help us manipulate the results to how we want to presenmt it. This can be misleading depending on how we use it.
+
+```{r}
+net.bg <- sample_pa(80) 
+
+V(net.bg)$size <- 8
+
+V(net.bg)$frame.color <- "white"
+
+V(net.bg)$color <- "orange"
+
+V(net.bg)$label <- "" 
+
+E(net.bg)$arrow.mode <- 0
+
+plot(net.bg)
+```
+
+
+```{r}
+plot(net.bg, layout=layout_randomly)
+```
+
+
+```{r}
+l <- layout_in_circle(net.bg)
+
+plot(net.bg, layout=l)
+```
+
+```{r}
+l <- cbind(1:vcount(net.bg), c(1, vcount(net.bg):2))
+
+plot(net.bg, layout=l)
+```
+
+```{r}
+l <- layout_randomly(net.bg)
+
+plot(net.bg, layout=l)
+```
+
+
+
+```{r}
+l <- layout_on_sphere(net.bg)
+
+plot(net.bg, layout=l)
+```
+
+
+### Fruchterman-Reingold Algorithm
+
+SAving the layout
+
+```{r}
+l <- layout_with_fr(net.bg)
+
+plot(net.bg, layout=l)
+```
+
+How each runs result in different layouts:
+
+Th first two runs were generated and how they are different each time, the bottom two are the graphs we saved in l for reproducibility.
+
+```{r}
+par(mfrow=c(2,2), mar=c(0,0,0,0))   # plot four figures - 2 rows, 2 columns
+
+plot(net.bg, layout=layout_with_fr)
+
+plot(net.bg, layout=layout_with_fr)
+
+plot(net.bg, layout=l)
+
+plot(net.bg, layout=l)
+```
+
+We try different scales for the graph:
+
+```{r}
+l <- layout_with_fr(net.bg)
+
+l <- norm_coords(l, ymin=-1, ymax=1, xmin=-1, xmax=1)
+
+
+
+par(mfrow=c(2,2), mar=c(0,0,0,0))
+
+plot(net.bg, rescale=F, layout=l*0.4)
+
+plot(net.bg, rescale=F, layout=l*0.6)
+
+plot(net.bg, rescale=F, layout=l*0.8)
+
+plot(net.bg, rescale=F, layout=l*1.0)
+```
+
+
+### Kamada Kawai Algorithm:
+
+
+```{r}
+l <- layout_with_kk(net.bg)
+
+plot(net.bg, layout=l)
+```
+
+### LGL algorithm:
+
+```{r}
+plot(net.bg, layout=layout_with_lgl)
+```
+
+### All layouts in igraph
+
+```{r}
+layouts <- grep("^layout_", ls("package:igraph"), value=TRUE)[-1] 
+
+# Remove layouts that do not apply to our graph.
+
+layouts <- layouts[!grepl("bipartite|merge|norm|sugiyama|tree", layouts)]
+par(mfrow=c(3,3), mar=c(1,1,1,1))
+for (layout in layouts) {
+  print(layout)
+  l <- do.call(layout, list(net)) 
+  plot(net, edge.arrow.mode=0, layout=l, main=layout) }
+```
+
+## Other ways to represent data:
+
+
+### Heatmap:
+
+```{r}
+netm <- get.adjacency(net, attr="weight", sparse=F)
+colnames(netm) <- V(net)$media
+rownames(netm) <- V(net)$media
+palf <- colorRampPalette(c("gold", "dark orange")) 
+heatmap(netm[,17:1], Rowv = NA, Colv = NA, col = palf(100), 
+        scale="none", margins=c(10,10) )
+```
+**Interpretation**::We observe the relations of media orgs with each other. We observe that the clusters formed in network graph will have higher degree of relation shown in heatmap.
+
+### Two mode network:
+
+```{r}
+V(net2)$color <- c("steel blue", "orange")[V(net2)$type+1]
+V(net2)$shape <- c("square", "circle")[V(net2)$type+1]
+V(net2)$label <- ""
+V(net2)$label[V(net2)$type==F] <- nodes2$media[V(net2)$type==F] 
+V(net2)$label.cex=.4
+V(net2)$label.font=2
+plot(net2, vertex.label.color="white", vertex.size=(2-V(net2)$type)*8) 
+```
+
+
+```{r}
+plot(net2, vertex.label=NA, vertex.size=7, layout=layout_as_bipartite) 
+```
+
+
+```{r}
+plot(net2, vertex.shape="none", vertex.label=nodes2$media,
+     vertex.label.color=V(net2)$color, vertex.label.font=2.5, 
+     vertex.label.cex=.6, edge.color="gray70",  edge.width=2)
+```
+
+**Interpretation**:: Here, we give names to the use nodes and media orgs. We use two mode to combine two graphs to help us visualize their relation. Here, we have for users and media channels. We observe how some users use multiple media sources whereas some are content with only one media source. The media source the users use can be used to group users based on their interests, political views, their location, etc.
+
+
+## Network and Node Descriptives:
+
+### Density:
+It is the ratio of actual edges to possible edges. It measures network sparsity (e.g., dense = many connections, sparse = few).
+It scales poorly for large networks.
+
+```{r}
+edge_density(net, loops=F)
+```
+```{r}
+ecount(net)/(vcount(net)*(vcount(net)-1)) #for a directed network
+```
+
+### Reciprocity:
+
+Proportion of mutual (bidirectional) edges in directed networks.
+
+- High reciprocity: Balanced relationships (e.g., mutual friendships).
+- Low reciprocity: Hierarchical/parasitic interactions (e.g., Twitter follows).
+
+```{r}
+reciprocity(net)
+
+dyad_census(net) # Mutual, asymmetric, and null node pairs
+
+2*dyad_census(net)$mut/ecount(net) # Calculating reciprocity
+```
+
+
+### Transitivity
+
+It is probability that two neighbors of a node are connected.
+    
+- High transitivity: Tight-knit communities (e.g., friend groups).
+- Low transitivity: Star-like or tree-like structures.
+
+```{r}
+transitivity(net, type="global")  # net is treated as an undirected network
+
+transitivity(as_undirected(net, mode="collapse")) # same as above
+
+transitivity(net, type="local")
+
+triad_census(net) # for directed networks 
+```
+
+
+### Diameter:
+diameter is the longest geodesic distance (length of the shortest path between two nodes)
+
+
+```{r}
+diameter(net, directed=F, weights=NA) ## steps when no weights
+```
+```{r}
+diameter(net, directed=F)
+```
+
+```{r}
+diam <- get_diameter(net, directed=T)
+
+diam
+```
+The above are nodes along the first found path of that distance.
+
+
+```{r}
+class(diam)
+```
+
+```{r}
+as.vector(diam)
+```
+
+The yellow color nodes are the nodes along the diameter.
+
+```{r}
+vcol <- rep("gray40", vcount(net))
+
+vcol[diam] <- "gold"
+
+ecol <- rep("gray80", ecount(net))
+
+ecol[E(net, path=diam)] <- "orange" 
+
+# E(net, path=diam) finds edges along a path, here 'diam'
+
+plot(net, vertex.color=vcol, edge.color=ecol, edge.arrow.mode=0)
+
+```
+
+
+### Node Degrees:
+
+Size of node here represents the total number of ins and outs edges for each node.
+
+```{r}
+deg <- degree(net, mode="all")
+
+plot(net, vertex.size=deg*3)
+```
+
+```{r}
+hist(deg, breaks=1:vcount(net)-1, main="Histogram of node degree")
+```
+
+**Interpretation**:: We observe that most nodes have degrees 3-6 and few have degrees 8,9 and 13.
+
+### Degree Distribution:
+
+```{r}
+deg.dist <- degree_distribution(net, cumulative=T, mode="all")
+
+plot( x=0:max(deg), y=1-deg.dist, pch=19, cex=1.2, col="orange", 
+      xlab="Degree", ylab="Cumulative Frequency")
+```
+We observe how curve is steeper around 6 so there are more frequent nodes with degree 6.
+
+## Centrality and Centralization::
+
+### Degree:
+Number of connections for each nodes, useful for identifying influencers.
+
+```{r}
+degree(net, mode="in")
+centr_degree(net, mode="in", normalized=T)
+```
+
+### Closeness:
+
+It is average distance to others. The closer ones spread information in the network more.
+
+```{r}
+closeness(net, mode="all", weights=NA) 
+centr_clo(net, mode="all", normalized=T)
+```
+
+### Betweenness:
+
+It is useful for finding nodes on shortest paths useful for routing.
+
+```{r}
+betweenness(net, directed=T, weights=NA)
+edge_betweenness(net, directed=T, weights=NA)
+centr_betw(net, directed=T, normalized=T)
+```
+
+## Hubs and Authorities:
+
+The hubs and authorities algorithm developed by Jon Kleinberg was initially used to examine web pages. Hubs were expected to contain catalogs with a large number of outgoing links; while authorities would get many incoming links from hubs, presumably because of their high-quality relevant information.
+
+```{r}
+hs <- hub_score(net, weights=NA)$vector
+as <- authority_score(net, weights=NA)$vector
+
+par(mfrow=c(1,2))
+ plot(net, vertex.size=hs*50, main="Hubs")
+ plot(net, vertex.size=as*30, main="Authorities")
+```
+
+
+## Distance and Paths:
+
+```{r}
+mean_distance(net, directed=F)
+mean_distance(net, directed=T)
+```
+
+we will get the distance of every media from the New York Times.
+
+
+```{r}
+dist.from.NYT <- distances(net, v=V(net)[media=="NY Times"], to=V(net), weights=NA)
+# Set colors to plot the distances:
+oranges <- colorRampPalette(c("dark red", "gold"))
+col <- oranges(max(dist.from.NYT)+1)
+col <- col[dist.from.NYT+1]
+plot(net, vertex.color=col, vertex.label=dist.from.NYT, edge.arrow.size=.6, 
+     vertex.label.color="white")
+```
+
+the shortest path between MSNBC and the New York Post
+
+```{r}
+news.path <- shortest_paths(net, 
+                            from = V(net)[media=="MSNBC"], 
+                             to  = V(net)[media=="New York Post"],
+                             output = "both") # both path nodes and edges
+
+# Generate edge color variable to plot the path:
+ecol <- rep("gray80", ecount(net))
+ecol[unlist(news.path$epath)] <- "orange"
+# Generate edge width variable to plot the path:
+ew <- rep(2, ecount(net))
+ew[unlist(news.path$epath)] <- 4
+# Generate node color variable to plot the path:
+vcol <- rep("gray40", vcount(net))
+vcol[unlist(news.path$vpath)] <- "gold"
+plot(net, vertex.color=vcol, edge.color=ecol, 
+     edge.width=ew, edge.arrow.mode=0)
+```
+
+Identify the edges going into or out of a vertex, for instance the WSJ.
+
+```{r}
+inc.edges <- incident(net,  V(net)[media=="Wall Street Journal"], mode="all")
+# Set colors to plot the selected edges.
+ecol <- rep("gray80", ecount(net))
+ecol[inc.edges] <- "orange"
+vcol <- rep("grey40", vcount(net))
+vcol[V(net)$media=="Wall Street Journal"] <- "gold"
+plot(net, vertex.color=vcol, edge.color=ecol)
+```
+
+We can also identify the immediate neighbors of a vertex, say WSJ. The nodes to which the node edges are going out.
+
+```{r}
+neigh.nodes <- neighbors(net, V(net)[media=="Wall Street Journal"], mode="out")
+# Set colors to plot the neighbors:
+vcol[neigh.nodes] <- "#ff9d00"
+
+plot(net, vertex.color=vcol)
+```
+
+Special operators for the indexing of edge sequences: %–%, %->%, %<-%
+* E(network)[X %–% Y] selects edges between vertex sets X and Y, ignoring direction
+* E(network)[X %->% Y] selects edges from vertex sets X to vertex set Y
+* E(network)[X %->% Y] selects edges from vertex sets Y to vertex set X
+
+select edges from newspapers to online sources
+
+```{r}
+E(net)[ V(net)[type.label=="Newspaper"] %->% V(net)[type.label=="Online"] ]
+```
+
+## Subgroups and Committees:
+
+Here, we make the graph undirected. Different ways of doing that are:
+
+- We can create an undirected link between any pair of connected nodes (mode="collapse")
+- Create undirected link for each directed one in the network, potentially ending up with a multiplex graph (mode="each")
+- Create undirected link for each symmetric link in the graph (mode="mutual").
+
+The ties A -> B and B -> A ties are collapsed into a single undirected link. The ‘weight’ of the links should be summed, and all other edge attributes ignored and dropped.
+
+```{r, }
+net.sym <- as.undirected(net, mode= "collapse",
+edge.attr.comb=list(weight="sum", "ignore"))
+```
+
+
+### Cliques:
+
+cliques are complete subgraphs of undirected graph.
+
+```{r}
+vcol <- rep("grey80", vcount(net.sym))
+
+vcol[unlist(largest_cliques(net.sym))] <- "gold"
+
+plot(as.undirected(net.sym), vertex.label=V(net.sym)$name, vertex.color=vcol)
+```
+
+### Community Detection:
+A number of algorithms aim to detect groups that consist of densely connected nodes with fewer connections across groups.
+
+
+### Community detection based on edge betweenness (Newman-Girvan)
+
+```{r}
+ceb <- cluster_edge_betweenness(net) 
+
+plot_dendrogram(ceb, mode="hclust")
+```
+
+
+```{r}
+plot(ceb, net)
+```
+
+```{r}
+class(ceb)
+length(ceb)     # number of communities
+membership(ceb) # community membership for each node
+modularity(ceb) # how modular the graph partitioning is
+```
+
+### Community detection based on based on propagating labels
+
+```{r}
+clp <- cluster_label_prop(net)
+
+plot(clp, net)
+```
+
+### Community detection based on greedy optimization of modularity
+
+```{r}
+cfg <- cluster_fast_greedy(as.undirected(net))
+
+plot(cfg, as.undirected(net))
+```
+
+Plotting without using the built in plot:
+
+```{r}
+V(net)$community <- cfg$membership
+
+colrs <- adjustcolor( c("gray50", "tomato", "gold", "yellowgreen"), alpha=.6)
+
+plot(net, vertex.color=colrs[V(net)$community])
+```
+
+
+### K-core decomposition:
+
+The k-core is the maximal subgraph in which every node has degree of at least k. The result here gives the coreness of each vertex in the network.
+
+```{r}
+kc <- coreness(net, mode="all")
+
+plot(net, vertex.size=kc*6, vertex.label=kc, vertex.color=colrs[kc])
+```
+
+
+## Assortativity and Homophily
+
+Assortativity: Tendency of nodes to link to similar nodes (by degree, attribute).
+Homophily: the tendency of nodes to connect to others who are similar on some variable.
+
+- assortativity_nominal() is for categorical variables (labels)
+- assortativity() is for ordinal and above variables
+- assortativity_degree() checks assortativity in node degrees
+
+
+```{r}
+assortativity_nominal(net, V(net)$media.type, directed=F)
+assortativity(net, V(net)$audience.size, directed=F)
+assortativity_degree(net, directed=F)
+```
+
+
+
+
