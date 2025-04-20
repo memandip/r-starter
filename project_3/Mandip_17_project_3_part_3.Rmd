@@ -1,6 +1,6 @@
 ---
-title: "Analysis of Engine Size vs Highway Mileage in Cars"
-author: "Data Science Student"
+title: "Project 3 - Part 3"
+author: "Mandip Chaudhary (17)"
 date: "`r Sys.Date()`"
 output:
   pdf_document: default
