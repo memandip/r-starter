@@ -1,0 +1,53 @@
+# Setup and libraries
+
+# Load required packages
+library(ggplot2)
+
+# Create basic scatterplot
+ggplot(mpg, aes(x = displ, y = hwy)) +
+  geom_point(alpha = 0.6) +
+  labs(
+    title = "Highway MPG vs. Engine Displacement",
+    x = "Engine Displacement (L)",
+    y = "Highway MPG",
+    caption = "Data source: mpg dataset from ggplot2"
+  ) +
+  theme_minimal()
+
+# Add smoothing line to scatterplot
+ggplot(mpg, aes(x = displ, y = hwy)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "loess", se = TRUE) +
+  labs(
+    title = "Highway MPG vs. Engine Displacement with Smoothing",
+    x = "Engine Displacement (L)",
+    y = "Highway MPG",
+    caption = "Blue line represents LOESS smoothing with 95% confidence interval"
+  ) +
+  theme_minimal()
+
+# Create faceted plot by number of cylinders
+ggplot(mpg, aes(x = displ, y = hwy)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "loess", se = TRUE) +
+  facet_wrap(~cyl) +
+  labs(
+    title = "Highway MPG vs. Engine Displacement by Number of Cylinders",
+    x = "Engine Displacement (L)",
+    y = "Highway MPG",
+    caption = "Separate panels for each cylinder count"
+  ) +
+  theme_minimal()
+
+# Create faceted grid by drive type and cylinders
+ggplot(mpg, aes(x = displ, y = hwy)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "loess", se = TRUE) +
+  facet_grid(drv ~ cyl) +
+  labs(
+    title = "Highway MPG vs. Engine Displacement by Drive Type and Cylinders",
+    x = "Engine Displacement (L)",
+    y = "Highway MPG",
+    caption = "Rows: Drive type (4=4wd, f=front, r=rear) | Columns: Number of cylinders"
+  ) +
+  theme_minimal()

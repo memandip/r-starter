@@ -1,0 +1,122 @@
+---
+title: "Project 3 - Part 3"
+author: "Mandip Chaudhary (17)"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+Part 3: Use "mpg" data of ggplot2 library and test the hypothesis that large engine cars (disp) have less highway milage (hwy) using scatterplot (geom_point) for overall plot and subcategories of disp variable with ggplot2 package. Then, perform smoothing on this scatterplot and explain the algorithm/method used to do smoothing by the ggplot2 package. Finally, use facet wrap and facet grid layers to show scatterplots for cyl and drv variables in ggplot2 and explain the results carefully.
+
+## Introduction
+
+In this analysis, we will investigate the relationship between engine size (displacement) and highway fuel efficiency using the `mpg` dataset from the ggplot2 package. We'll test the hypothesis that cars with larger engines tend to have lower highway mileage.
+
+## Initial Scatterplot Analysis
+
+```{r initial_plot}
+# Load ggplot2 library
+library(ggplot2)
+
+# Create basic scatterplot
+ggplot(mpg, aes(x = displ, y = hwy)) +
+  geom_point(alpha = 0.6) +
+  labs(
+    title = "Highway MPG vs. Engine Displacement",
+    x = "Engine Displacement (L)",
+    y = "Highway MPG",
+    caption = "Data source: mpg dataset from ggplot2"
+  ) +
+  theme_minimal()
+```
+
+The scatterplot above shows the relationship between engine displacement (in liters) and highway fuel efficiency (in miles per gallon). There appears to be a clear negative relationship, supporting our hypothesis that cars with larger engines tend to have lower highway fuel efficiency.
+
+## Adding a Smoothing Line
+
+```{r smoothed_plot}
+# Add smoothing line to scatterplot
+ggplot(mpg, aes(x = displ, y = hwy)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "loess", se = TRUE) +
+  labs(
+    title = "Highway MPG vs. Engine Displacement with Smoothing",
+    x = "Engine Displacement (L)",
+    y = "Highway MPG",
+    caption = "Blue line represents LOESS smoothing with 95% confidence interval"
+  ) +
+  theme_minimal()
+```
+
+### Explanation of Smoothing Method
+
+The blue line in the plot above is created using LOESS (Locally Estimated Scatterplot Smoothing). This is the default smoothing method in ggplot2 when n < 1000. LOESS works by:
+
+1. Taking a subset of data around each point
+2. Fitting a polynomial regression to that subset
+3. Using the regression to predict the smoothed value
+4. Moving along to the next point
+
+The grey band represents the 95% confidence interval for the smoothed line. The clear downward trend confirms our hypothesis about the negative relationship between engine size and fuel efficiency.
+
+## Faceted Analysis by Number of Cylinders
+
+```{r facet_wrap_plot}
+# Create faceted plot by number of cylinders
+ggplot(mpg, aes(x = displ, y = hwy)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "loess", se = TRUE) +
+  facet_wrap(~cyl) +
+  labs(
+    title = "Highway MPG vs. Engine Displacement by Number of Cylinders",
+    x = "Engine Displacement (L)",
+    y = "Highway MPG",
+    caption = "Separate panels for each cylinder count"
+  ) +
+  theme_minimal()
+```
+
+The faceted plot above breaks down the relationship by the number of cylinders. This reveals that:
+
+- 4-cylinder engines tend to be smaller and more fuel-efficient
+- 6-cylinder engines show a moderate range of displacement and efficiency
+- 8-cylinder engines are typically larger and less fuel-efficient
+- The negative relationship between displacement and highway MPG holds within each cylinder category
+
+## Combined Analysis by Drive Type and Cylinders
+
+```{r facet_grid_plot}
+# Create faceted grid by drive type and cylinders
+ggplot(mpg, aes(x = displ, y = hwy)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "loess", se = TRUE) +
+  facet_grid(drv ~ cyl) +
+  labs(
+    title = "Highway MPG vs. Engine Displacement by Drive Type and Cylinders",
+    x = "Engine Displacement (L)",
+    y = "Highway MPG",
+    caption = "Rows: Drive type (4=4wd, f=front, r=rear) | Columns: Number of cylinders"
+  ) +
+  theme_minimal()
+```
+
+The facet grid above provides a comprehensive view of how both drive type and number of cylinders affect the relationship between engine size and fuel efficiency:
+
+1. Front-wheel drive (f):
+   - Predominantly found in 4 and 6-cylinder vehicles
+   - Shows strong negative correlation between displacement and MPG
+   
+2. Rear-wheel drive (r):
+   - More common in larger engines (6 and 8 cylinders)
+   - Generally lower MPG across all displacements
+
+3. Four-wheel drive (4):
+   - Present across all cylinder categories
+   - Shows consistent negative relationship between displacement and MPG
+
+This analysis demonstrates that while larger engines generally result in lower highway fuel efficiency, the relationship is modulated by both the number of cylinders and the type of drive system employed in the vehicle.
