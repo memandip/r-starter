@@ -1,0 +1,211 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+lm_model = lm(mpg ~ wt + wt, data = mtcars)
+
+mse <- mean(lm_model$residuals^2)
+
+# mse <- mean((mtcars$mpg - predict(lm_model))^2)
+
+mse
+```
+
+# Saving predicted values
+
+```{r}
+data <- data.frame(pred=predict(lm_model), actual=mtcars$mpg)
+
+head(data)
+
+mean((data$actual - data$pred)^2)
+```
+
+## RMSE
+
+```{r}
+library(caret)
+
+R2 <- R2(data$pred, data$actual)
+RMSE <- RMSE(data$pred, data$actual)
+
+print(paste("R2:", R2))
+print(paste("RMSE:", RMSE))
+```
+
+
+## Linear Regression
+
+```{r}
+data <- mtcars
+
+set.seed(17)
+# Create a random sample of 70% of the data
+ind <- sample(2, nrow(data), replace = TRUE, prob = c(0.7, 0.3))
+
+# Create training and test sets
+train.data <- data[ind == 1, ]
+test.data <- data[ind==2, ]
+
+test.data$mpg
+```
+
+```{r}
+library(dplyr)
+library(caret)
+
+lm4 <- lm(mpg ~ wt, data = train.data)
+predictions <- lm4 %>% predict(test.data)
+predictions
+data.frame(
+  R2 = R2(predictions, test.data$mpg),
+  RMSE = RMSE(predictions, test.data$mpg),
+  MAE = MAE(predictions, test.data$mpg)
+)
+```
+
+```{r}
+set.seed(17)
+# Define training control
+train_control <- trainControl(method = "LOOCV")
+
+# Train the model
+model1 <- train(mpg ~ wt, data = train.data, method = "lm", trControl = train_control)
+
+predictions1 <- model1 %>% predict(test.data)
+
+data.frame(
+  R2 = R2(predictions1, test.data$mpg),
+  RMSE = RMSE(predictions1, test.data$mpg),
+  MAE = MAE(predictions1, test.data$mpg)
+)
+```
+
+## K-folds cross-validation approach
+```{r}
+set.seed(17)
+train.control <- trainControl(method = "LOOCV", number = 10)
+
+model2 <- train(mpg ~ wt, data = train.data, method = "lm", trControl = train.control)
+
+predictions2 <- model2 %>% predict(test.data)
+
+data.frame(
+  R2 = R2(predictions2, test.data$mpg),
+  RMSE = RMSE(predictions2, test.data$mpg),
+  MAE = MAE(predictions2, test.data$mpg)
+)
+```
+
+## Multiple Linear Regression
+```{r}
+mlr <- lm(mpg ~ ., data=mtcars)
+
+summary(mlr)
+
+library(car)
+vif(mlr)
+```
+
+```{r}
+# Removed column if vif value is greater than 10
+# As there is multiple variables vif value greater than 10
+# Removing "disp" variable as it has highest VIF value
+
+mlr1 <- lm(
+  mpg ~ cyl + hp + drat + wt + qsec + vs + am + gear + carb,
+  data=mtcars
+)
+
+summary(mlr1)
+
+vif(mlr1)
+```
+
+```{r}
+# Removed column if vif value is greater than 10
+# Dropping cyl as it has high vif value
+
+mlr1 <- lm(
+  mpg ~ hp + drat + wt + qsec + vs + am + gear + carb,
+  data=mtcars
+)
+
+summary(mlr1)
+
+vif(mlr1)
+```
+
+```{r}
+# Define Boston Data
+boston = MASS::Boston
+str(boston)
+
+set.seed(17)
+
+ind <- sample(2, nrow(boston), replace = TRUE, prob = c(0.8, 0.2))
+
+train.data <- boston[ind==1,]
+test.data <- boston[ind==2,]
+```
+
+```{r}
+# Training data scaling (must for KNN)
+train_x <- test.data[,-14]
+train_x <- scale(train_x)[,]
+
+# Test (validation) data scaling
+train_x <- test.data[,-14]
+train_x <- scale(train_x)[,]
+train_y <- test.data[,14]
+
+knnmodel <- knnreg(train_x, train_y)
+str(knnmodel)
+summary(knnmodel)
+
+pred_y <- predict(knnmodel, data.frame(test_x))
+pred_y
+```
+
+## Print the accuracy of indices
+```{r}
+print(data.frame(test_y, pred_y))
+
+mse <- mean((test_y - pred_y)^2)
+mae <- caret::MAE(test_y, pred_y)
+rmse <- caret::RMSE(test_y, pred_y)
+
+cat("MSE: ", mse, "\n")
+cat("MAE: ", mae, "\n")
+cat("RMSE: ", rmse, "\n")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
