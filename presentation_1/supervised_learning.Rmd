@@ -1,0 +1,580 @@
+---
+title: "Supervised Learning"
+author: "Mandip Chaudhary"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+## Splitting the mtcars dataset into Training and Testing Sets
+
+We'll split the mtcars dataset into training (70%) and testing (30%) sets using random sampling.
+
+```{r}
+library(datasets)
+# Set random seed for reproducibility
+set.seed(123)
+
+# Get row indices for training set (70% of data)
+train_index <- sample(2, nrow(mtcars), replace = T, prob = c(0.7, 0.3))
+
+# Create training and testing datasets
+train_data <- mtcars[train_index==1, ]
+test_data <- mtcars[train_index==2, ]
+
+# Print the dimensions of both datasets
+cat("Training set dimensions:", dim(train_data), "\n")
+cat("Testing set dimensions:", dim(test_data), "\n")
+```
+
+Let's also verify the data split by checking the first few rows of each dataset:
+
+```{r}
+# View first few rows of training data
+head(train_data)
+
+# View first few rows of testing data
+head(test_data)
+```
+
+## Simple Linear Regression Models and BLUE
+
+We now fit simple linear regression models for `mpg` against each predictor variable in the training data individually.
+
+```{r}
+# Identify predictor variables (exclude 'mpg')
+predictors <- setdiff(names(train_data), "mpg")
+models <- list()
+
+# Fit models one by one and display summaries
+for (pred in predictors) {
+  formula <- as.formula(paste("mpg ~", pred))
+  models[[pred]] <- lm(formula, data = train_data)
+  cat("Model for mpg ~", pred, "\n")
+  print(summary(models[[pred]]))
+  cat("\n")
+}
+```
+
+### Discussion on BLUE
+
+According to the Gauss-Markov theorem, the Ordinary Least Squares (OLS) estimator is the Best Linear Unbiased Estimator (BLUE) provided that the following assumptions hold:
+- **Linearity:** The relationship between the dependent and independent variable is linear.
+- **Independence:** The error terms are independent.
+- **Homoscedasticity:** The error terms have constant variance.
+- **Unbiasedness:** The error term has an expected value of zero.
+
+In each of these simple regression models, if the assumptions above are met, the OLS estimates will be BLUE, meaning they have the smallest variance among all linear unbiased estimators. However, if any of these assumptions are violated—for instance, if there is heteroscedasticity or non-linearity—the estimators may no longer be considered BLUE.
+
+## Statistically Significant Variables
+
+Below is the code to extract statistically significant predictors (with p < 0.05) based on the simple linear regression models:
+
+```{r}
+# Create a data frame to store variable significance
+significance_df <- data.frame(
+  predictor = predictors,
+  p_value = sapply(models, function(m) summary(m)$coefficients[2, 4])
+)
+
+# Filter for significant variables (p < 0.05)
+significant_vars <- significance_df[significance_df$p_value < 0.05, ]
+significant_vars <- significant_vars[order(significant_vars$p_value), ]
+
+# Display the significant variables
+cat("Statistically significant variables (p < 0.05):\n")
+print(significant_vars)
+```
+
+## Multiple Linear Regression Model
+
+Now, we fit a multiple linear regression model using only the statistically significant variables identified above.
+
+```{r}
+# Check if there are any significant variables
+if (nrow(significant_vars) > 0) {
+  # Create formula using significant predictors
+  significant_predictors <- significant_vars$predictor
+  formula_multiple <- as.formula(paste("mpg ~", paste(significant_predictors, collapse = " + ")))
+
+  # Fit multiple linear regression model
+  multiple_model <- lm(formula_multiple, data = train_data)
+
+  # Display model summary
+  cat("Multiple Linear Regression Model Summary (using significant predictors):\n")
+  print(summary(multiple_model))
+} else {
+  cat("No statistically significant variables found to build a multiple regression model.\n")
+}
+```
+
+## Checking for Multicollinearity using VIF
+
+We will now check for multicollinearity among the predictors in the multiple regression model using the Variance Inflation Factor (VIF). A common rule of thumb is that VIF values greater than or equal to 10 indicate problematic multicollinearity. We will iteratively remove the variable with the highest VIF until all remaining variables have VIF < 10.
+
+```{r}
+# Load the car package for VIF calculation
+library(car)
+
+# Check if the multiple_model exists and has more than one predictor
+if (exists("multiple_model") && length(coef(multiple_model)) > 2) {
+
+  # Calculate initial VIF values
+  vif_values <- tryCatch(
+    vif(multiple_model),
+    error = function(e) {
+      cat("Error calculating VIF: ", e$message, "\n")
+      return(NULL)
+    }
+  )
+
+  if (!is.null(vif_values)) {
+    cat("Initial VIF values:\n")
+    print(vif_values)
+
+    # Iteratively remove variables with VIF >= 10
+    current_predictors <- names(vif_values)
+    while(any(vif_values >= 10, na.rm = TRUE)) {
+      # Find variable with highest VIF
+      max_vif_var <- names(which.max(vif_values))
+      cat("\nRemoving variable with highest VIF:", max_vif_var, "(VIF =", round(max(vif_values, na.rm = TRUE), 2), ")\n")
+
+      # Update predictor list
+      current_predictors <- setdiff(current_predictors, max_vif_var)
+
+      # Check if there are enough predictors left
+      if (length(current_predictors) < 1) {
+        cat("Not enough predictors left to build a model after removing high VIF variables.\n")
+        multiple_model <- NULL # Set model to NULL as it's no longer valid
+        break
+      }
+
+      # Refit the model with remaining predictors
+      formula_updated <- as.formula(paste("mpg ~", paste(current_predictors, collapse = " + ")))
+      multiple_model <- lm(formula_updated, data = train_data)
+
+      # Recalculate VIF for the new model
+      # Need at least 2 predictors to calculate VIF
+      if (length(current_predictors) >= 2) {
+         vif_values <- tryCatch(
+           vif(multiple_model),
+           error = function(e) {
+             cat("Error calculating VIF after update: ", e$message, "\n")
+             return(NULL) # Stop iteration if VIF calculation fails
+           }
+         )
+         if (is.null(vif_values)) break # Exit loop if VIF calculation failed
+         cat("Updated VIF values:\n")
+         print(vif_values)
+      } else {
+         cat("Only one predictor remaining, VIF calculation not applicable.\n")
+         vif_values <- c(0) # Set VIF to 0 to exit loop
+      }
+    }
+
+    # Display the final model summary if a valid model exists
+    if (!is.null(multiple_model)) {
+       cat("\nFinal Multiple Linear Regression Model Summary (after VIF check):\n")
+       print(summary(multiple_model))
+    }
+  }
+} else if (exists("multiple_model") && length(coef(multiple_model)) <= 2) {
+  cat("Multiple regression model has only one predictor or intercept. VIF check is not applicable.\n")
+  cat("Final Model Summary:\n")
+  print(summary(multiple_model))
+} else {
+  cat("Multiple regression model was not built (likely due to no significant predictors initially).\n")
+}
+```
+
+## Model Performance Metrics
+
+```{r}
+# Check if the final model exists before calculating metrics
+if (!is.null(multiple_model)) {
+  # Function to calculate performance metrics
+  calculate_metrics <- function(actual, predicted) {
+    rmse <- sqrt(mean((actual - predicted)^2, na.rm = TRUE))
+    mae <- mean(abs(actual - predicted), na.rm = TRUE)
+    list(RMSE = rmse, MAE = mae)
+  }
+
+  # Get predictions on training data
+  train_pred <- predict(multiple_model, newdata = train_data)
+
+  # Get predictions on testing data
+  # Ensure test_data has the same predictors as the final model
+  final_predictors <- names(coef(multiple_model))[-1] # Exclude intercept
+  if (all(final_predictors %in% names(test_data))) {
+     test_pred <- predict(multiple_model, newdata = test_data)
+     test_actual <- test_data$mpg
+  } else {
+     cat("Warning: Not all predictors from the final model are present in the test data. Cannot calculate test metrics accurately.\n")
+     test_pred <- NA
+     test_actual <- NA
+  }
+
+
+  # Calculate metrics for training data
+  train_metrics <- calculate_metrics(train_data$mpg, train_pred)
+
+  # Calculate metrics for testing data if possible
+  if (!any(is.na(test_pred))) {
+     test_metrics <- calculate_metrics(test_actual, test_pred)
+  } else {
+     test_metrics <- list(RMSE = NA, MAE = NA)
+  }
+
+
+  # Display results
+  cat("\nModel Performance Metrics:\n")
+  model_summary <- summary(multiple_model)
+  cat("\nTraining Data:")
+  cat("\n - R-squared:", round(model_summary$r.squared, 4))
+  cat("\n - Adjusted R-squared:", round(model_summary$adj.r.squared, 4))
+  cat("\n - RMSE:", round(train_metrics$RMSE, 4))
+  cat("\n - MAE:", round(train_metrics$MAE, 4))
+
+  cat("\n\nTesting Data:")
+  if (!is.na(test_metrics$RMSE)) {
+    cat("\n - RMSE:", round(test_metrics$RMSE, 4))
+    cat("\n - MAE:", round(test_metrics$MAE, 4))
+  } else {
+    cat("\n - Metrics could not be calculated for test data.")
+  }
+
+} else {
+  cat("\nFinal model does not exist, cannot calculate performance metrics.\n")
+}
+```
+
+## LASSO Regression
+
+LASSO (Least Absolute Shrinkage and Selection Operator) is another method to handle multicollinearity and perform variable selection by shrinking some coefficients exactly to zero.
+
+```{r}
+# Load the glmnet package
+# install.packages("glmnet") # Uncomment if not installed
+library(glmnet)
+
+# Prepare data matrices (using all original predictors for LASSO)
+# Ensure 'mpg' is excluded from predictors
+all_predictors <- setdiff(names(mtcars), "mpg")
+x_train_lasso <- as.matrix(train_data[, all_predictors])
+y_train_lasso <- train_data$mpg
+x_test_lasso <- as.matrix(test_data[, all_predictors])
+y_test_lasso <- test_data$mpg
+
+# Perform cross-validation to find the optimal lambda (penalty parameter)
+# alpha = 1 specifies LASSO regression
+set.seed(123) # for reproducibility of cv.glmnet
+cv_fit <- cv.glmnet(x_train_lasso, y_train_lasso, alpha = 1)
+
+# Plot the cross-validation results (MSE vs. log(lambda))
+plot(cv_fit)
+cat("Optimal lambda (lambda.min) based on cross-validation:", cv_fit$lambda.min, "\n")
+cat("Optimal lambda (lambda.1se) based on cross-validation:", cv_fit$lambda.1se, "\n")
+
+# Fit the final LASSO model using the optimal lambda (lambda.min is often preferred)
+lasso_model <- glmnet(x_train_lasso, y_train_lasso, alpha = 1, lambda = cv_fit$lambda.min)
+
+# Display the non-zero coefficients selected by LASSO
+cat("\nLASSO Model Coefficients (non-zero):\n")
+lasso_coeffs <- coef(lasso_model)
+print(lasso_coeffs[which(lasso_coeffs != 0), , drop = FALSE])
+
+# Make predictions using the LASSO model
+train_pred_lasso <- predict(lasso_model, s = cv_fit$lambda.min, newx = x_train_lasso)
+test_pred_lasso <- predict(lasso_model, s = cv_fit$lambda.min, newx = x_test_lasso)
+
+# Calculate performance metrics for LASSO model
+# Re-use the calculate_metrics function defined earlier if it exists
+if (exists("calculate_metrics")) {
+  train_metrics_lasso <- calculate_metrics(y_train_lasso, train_pred_lasso)
+  test_metrics_lasso <- calculate_metrics(y_test_lasso, test_pred_lasso)
+
+  # Display LASSO performance metrics
+  cat("\nLASSO Model Performance Metrics:\n")
+  cat("\nTraining Data:")
+  cat("\n - RMSE:", round(train_metrics_lasso$RMSE, 4))
+  cat("\n - MAE:", round(train_metrics_lasso$MAE, 4))
+
+  cat("\n\nTesting Data:")
+  cat("\n - RMSE:", round(test_metrics_lasso$RMSE, 4))
+  cat("\n - MAE:", round(test_metrics_lasso$MAE, 4))
+} else {
+  cat("\n'calculate_metrics' function not found. Cannot calculate LASSO performance metrics.\n")
+}
+```
+
+## Residual Analysis for Final (LASSO) Model
+
+We perform residual analysis on the final model derived from LASSO to check if the assumptions of linear regression (LINE: Linearity, Independence, Normality, Equal Variance) are met. Standard diagnostic tests often require an `lm` object. We will fit an `lm` model using only the predictors selected by LASSO for this purpose.
+
+```{r}
+# Load lmtest package for diagnostic tests
+# install.packages("lmtest") # Uncomment if not installed
+library(lmtest)
+
+# Check if lasso_model and lasso_coeffs exist
+if (exists("lasso_model") && exists("lasso_coeffs")) {
+
+  # Get the names of predictors selected by LASSO (excluding intercept)
+  selected_predictors <- rownames(lasso_coeffs)[which(lasso_coeffs != 0)][-1] # Exclude intercept row
+
+  # Check if any predictors were selected
+  if (length(selected_predictors) > 0) {
+
+    # Create formula for the lm model with selected predictors
+    formula_lasso_lm <- as.formula(paste("mpg ~", paste(selected_predictors, collapse = " + ")))
+
+    # Fit the lm model using selected predictors on training data
+    final_lm_model <- lm(formula_lasso_lm, data = train_data)
+
+    cat("\n--- Residual Analysis using lm model with LASSO-selected predictors ---\n")
+
+    # Get residuals and fitted values from the lm model
+    lm_residuals <- resid(final_lm_model)
+    lm_fitted_values <- fitted(final_lm_model)
+
+    # Set up plot layout
+    par(mfrow = c(2, 2))
+
+    # 1. Linearity: Residuals vs Fitted plot
+    plot(lm_fitted_values, lm_residuals,
+         xlab = "Fitted values", ylab = "Residuals",
+         main = "Residuals vs Fitted")
+    abline(h = 0, col = "red", lty = 2)
+
+    # 2. Normality: Q-Q Plot
+    qqnorm(lm_residuals, main = "Normal Q-Q Plot")
+    qqline(lm_residuals, col = "red")
+
+    # 3. Equal Variance (Homoscedasticity): Scale-Location Plot
+    plot(lm_fitted_values, sqrt(abs(lm_residuals)),
+         xlab = "Fitted values", ylab = "Sqrt(|Residuals|)",
+         main = "Scale-Location Plot")
+    abline(h = mean(sqrt(abs(lm_residuals))), col = "red", lty = 2)
+
+    # 4. Independence: Residuals vs Order (can indicate time dependence if data ordered)
+    plot(lm_residuals, type = 'l', xlab = "Observation Order", ylab = "Residuals", main = "Residuals vs Order")
+    abline(h = 0, col = "red", lty = 2)
+
+    # Reset plot layout
+    par(mfrow = c(1, 1))
+
+    # Statistical Tests for Assumptions
+    cat("\n--- Statistical Tests for Residual Assumptions ---\n")
+
+    # Test for Normality (Shapiro-Wilk)
+    shapiro_test <- shapiro.test(lm_residuals)
+    cat("Shapiro-Wilk Normality Test:\n")
+    print(shapiro_test)
+
+    # Test for Homoscedasticity (Breusch-Pagan)
+    bp_test <- bptest(final_lm_model)
+    cat("\nBreusch-Pagan Test for Homoscedasticity:\n")
+    print(bp_test)
+
+    # Test for Independence (Durbin-Watson) - Assumes data has meaningful order
+    dw_test <- dwtest(final_lm_model)
+    cat("\nDurbin-Watson Test for Autocorrelation:\n")
+    print(dw_test)
+
+  } else {
+    cat("\nLASSO selected no predictors (only intercept). Residual analysis is not applicable.\n")
+    final_lm_model <- NULL # No model to analyze
+  }
+} else {
+  cat("\nLASSO model or coefficients not found. Cannot perform residual analysis.\n")
+  final_lm_model <- NULL
+}
+```
+
+### Discussion on Residual Analysis Results
+
+*   **Linearity:** Examine the "Residuals vs Fitted" plot. Ideally, the points should scatter randomly around the horizontal line at 0, with no discernible pattern (like a curve). A pattern suggests the linearity assumption might be violated.
+*   **Independence:** The Durbin-Watson test statistic should ideally be close to 2. Values significantly lower than 2 suggest positive autocorrelation, while values significantly higher suggest negative autocorrelation. This test is most relevant if the data has a natural order (e.g., time series). The "Residuals vs Order" plot can also visually hint at autocorrelation if patterns emerge.
+*   **Normality:** The "Normal Q-Q Plot" should show points falling approximately along the straight line. Deviations, especially at the tails, indicate non-normality. The Shapiro-Wilk test provides a p-value; if p < 0.05, we reject the null hypothesis of normality.
+*   **Equal Variance (Homoscedasticity):** The "Scale-Location Plot" should show points randomly scattered with roughly constant vertical spread. A funnel shape (widening or narrowing spread) indicates heteroscedasticity (non-constant variance). The Breusch-Pagan test provides a p-value; if p < 0.05, we reject the null hypothesis of homoscedasticity.
+
+### Can you do prediction using this model? Why?
+
+Whether the final model (derived from LASSO and potentially refined by diagnostics) is suitable for prediction depends on several factors:
+
+1.  **Residual Analysis Results:** If the LINE assumptions are reasonably met (especially linearity and homoscedasticity), the model's predictions are more likely to be reliable and unbiased on average. Significant violations suggest the model might not capture the underlying relationship well, leading to poor predictions.
+2.  **Performance on Test Data:** The key indicator is how well the model performs on unseen data (the test set). Look at the RMSE and MAE calculated for the *testing data* in the "Model Performance Metrics" section for the LASSO model. Lower values indicate better predictive accuracy. If the test RMSE/MAE are substantially higher than the training RMSE/MAE, it suggests overfitting.
+3.  **Model Complexity vs. Interpretability:** LASSO performs variable selection, potentially leading to a simpler model than the initial multiple regression. Simpler models can sometimes generalize better. However, the coefficients from LASSO are shrunk and might be biased (not BLUE), which is a trade-off for variance reduction and variable selection.
+4.  **Context and Purpose:** Is the goal purely prediction, or also understanding the precise effect of each variable? For pure prediction, if test set performance is good and diagnostics are acceptable, the model can be used. If interpretation of coefficients is crucial, the potential bias in LASSO coefficients needs consideration.
+
+**Conclusion:** Yes, you can likely use this model for prediction *if* the residual analysis does not reveal major violations of assumptions *and* the performance metrics on the test dataset (RMSE, MAE) are acceptably low for your purpose. The LASSO approach often yields models with good predictive performance, especially when dealing with multicollinearity or high-dimensional data.
+
+## Prediction on Test Data and Accuracy Assessment
+
+Finally, we use the refined `lm` model (built using predictors selected by LASSO) to predict `mpg` on the unseen test data and evaluate its predictive accuracy using R-squared, RMSE, and MAE.
+
+```{r}
+# Check if the final_lm_model exists
+if (!is.null(final_lm_model)) {
+
+  # Ensure test_data has the required predictors
+  required_predictors <- names(coef(final_lm_model))[-1] # Get predictors from the final lm model
+  if (all(required_predictors %in% names(test_data))) {
+
+    # Predict mpg on the test data
+    test_predictions <- predict(final_lm_model, newdata = test_data)
+
+    # Actual mpg values from the test data
+    test_actual_mpg <- test_data$mpg
+
+    # Calculate R-squared for the test data prediction
+    # R-squared = 1 - (Sum of Squared Errors / Total Sum of Squares)
+    sse_test <- sum((test_actual_mpg - test_predictions)^2)
+    sst_test <- sum((test_actual_mpg - mean(test_actual_mpg))^2)
+    r_squared_test <- 1 - (sse_test / sst_test)
+
+    # Calculate RMSE and MAE using the calculate_metrics function (if it exists)
+    if (exists("calculate_metrics")) {
+      test_metrics_final <- calculate_metrics(test_actual_mpg, test_predictions)
+      rmse_test_final <- test_metrics_final$RMSE
+      mae_test_final <- test_metrics_final$MAE
+    } else {
+      # Manual calculation if function not found
+      rmse_test_final <- sqrt(mean((test_actual_mpg - test_predictions)^2))
+      mae_test_final <- mean(abs(test_actual_mpg - test_predictions))
+      cat("Warning: 'calculate_metrics' function not found, calculating RMSE/MAE manually.\n")
+    }
+
+    # Display the prediction accuracy metrics
+    cat("\n--- Prediction Accuracy on Test Data ---\n")
+    cat("R-squared (Test):", round(r_squared_test, 4), "\n")
+    cat("RMSE (Test):", round(rmse_test_final, 4), "\n")
+    cat("MAE (Test):", round(mae_test_final, 4), "\n")
+
+    # Optionally, display a comparison of actual vs. predicted values
+    prediction_comparison <- data.frame(
+      Actual_mpg = test_actual_mpg,
+      Predicted_mpg = test_predictions,
+      Prediction_Error = test_actual_mpg - test_predictions
+    )
+    cat("\nComparison of Actual vs. Predicted MPG on Test Data (First 6 rows):\n")
+    print(head(prediction_comparison))
+
+  } else {
+    cat("\nTest data is missing some predictors required by the final model. Cannot make predictions.\n")
+    missing_preds <- setdiff(required_predictors, names(test_data))
+    cat("Missing predictors:", paste(missing_preds, collapse=", "), "\n")
+  }
+
+} else {
+  cat("\nFinal linear model (final_lm_model) based on LASSO selection does not exist. Cannot perform prediction.\n")
+}
+```
+
+### Interpretation of Prediction Accuracy Indices
+
+*   **R-squared (Test):** This value (ranging from 0 to 1) indicates the proportion of the variance in the test set's `mpg` that is predictable from the independent variables included in our final model. A higher R-squared suggests that the model explains a larger portion of the variability in the unseen data. For example, an R-squared of 0.75 means the model explains 75% of the variance in `mpg` on the test set.
+*   **RMSE (Root Mean Square Error) (Test):** This is the standard deviation of the prediction errors (residuals) on the test set. It measures the average magnitude of the errors in the units of the dependent variable (`mpg`). A lower RMSE indicates a better fit and more accurate predictions. For instance, an RMSE of 2.5 means that, on average, the model's predictions are about 2.5 mpg away from the actual values.
+*   **MAE (Mean Absolute Error) (Test):** This measures the average absolute difference between the predicted values and the actual values on the test set. Like RMSE, it's in the units of `mpg`, and lower values are better. MAE is less sensitive to large outliers compared to RMSE. An MAE of 2.0 means the average absolute error of prediction is 2.0 mpg.
+
+**Overall Assessment:** By comparing these test set metrics (R-squared, RMSE, MAE) to the corresponding metrics calculated on the *training data* earlier, we can assess potential overfitting. If the test metrics are significantly worse (e.g., much lower R-squared, much higher RMSE/MAE) than the training metrics, the model might be overfit to the training data and may not generalize well. If the metrics are reasonably close, it suggests the model generalizes well to new, unseen data. The absolute values of RMSE and MAE provide a sense of the typical prediction error magnitude.
+
+## Prediction for a Specific Car (6000 lbs)
+
+Let's predict the `mpg` for a hypothetical car weighing 6000 lbs (wt = 6, since `wt` is in 1000s of lbs) using our final `lm` model derived from LASSO selection.
+
+```{r}
+# Check if the final_lm_model exists
+if (!is.null(final_lm_model)) {
+
+  # Get the predictors required by the final model (excluding intercept)
+  final_model_predictors <- names(coef(final_lm_model))[-1]
+
+  # Create a data frame for the new car
+  # Set wt = 6
+  # For other required predictors, use their mean from the training data
+  new_car_data <- data.frame(wt = 6.0) # Explicitly set wt
+  cat("Creating new data point for prediction. Using mean for unspecified predictors:\n")
+  for (pred in final_model_predictors) {
+    if (pred != "wt") {
+      if (pred %in% names(train_data)) {
+        mean_val <- mean(train_data[[pred]], na.rm = TRUE)
+        new_car_data[[pred]] <- mean_val
+        cat(" - Setting", pred, "to mean value:", round(mean_val, 2), "\n")
+      } else {
+        cat("Warning: Predictor '", pred, "' needed by model but not found in training data means. Prediction might fail or be inaccurate.\n")
+        # Assign a default like 0 or NA, though prediction will likely fail if NA
+        new_car_data[[pred]] <- 0
+      }
+    }
+  }
+  # Ensure column order matches model if necessary (predict.lm usually handles names)
+  # new_car_data <- new_car_data[, final_model_predictors, drop = FALSE]
+
+
+  # Predict MPG for the new car
+  predicted_mpg_new_car <- predict(final_lm_model, newdata = new_car_data)
+
+  # Display the prediction
+  cat("\nPredicted MPG for a car with wt = 6 (6000 lbs):\n")
+  cat(" -> Predicted MPG:", round(predicted_mpg_new_car, 2), "\n")
+
+  # Discussion on the prediction
+  cat("\nDiscussion:\n")
+  # Check range of wt in training data
+  wt_range_train <- range(train_data$wt, na.rm = TRUE)
+  cat(" - Note: The weight (wt=6) is outside the range observed in the training data (", round(wt_range_train[1], 2), "-", round(wt_range_train[2], 2), ").\n")
+  cat(" - This is an extrapolation, and predictions outside the observed data range can be unreliable.\n")
+  cat(" - The prediction is based on the model fitted to the *training data* after variable selection and VIF checks (or LASSO selection).\n")
+  cat(" - The 'correctness' depends on how well the model assumptions hold and its validated performance on the test set, but extrapolation always carries risk.\n")
+
+} else {
+  cat("\nFinal linear model (final_lm_model) does not exist. Cannot perform prediction for the new car.\n")
+}
+```
+
+### Which prediction is correct (Training vs. Testing Data)?
+
+The question asks about predictions based on training and testing data. Here's the clarification:
+
+1.  **Model Training:** The model (whether it's the VIF-refined `multiple_model` or the LASSO-derived `final_lm_model`) is *always* built using the **training data**. This is where the model learns the relationships between predictors and the outcome (`mpg`).
+2.  **Model Evaluation:** The **testing data** is used *only* to evaluate how well the trained model generalizes to new, unseen data. We calculate metrics like R-squared, RMSE, and MAE on the test set to get an unbiased estimate of its predictive performance. We *do not* typically re-train a separate model on the test data for prediction purposes.
+3.  **Prediction:** When predicting for a new data point (like the 6000 lbs car), we use the **model trained on the training data** (`final_lm_model` in our latest code).
+
+Therefore, the prediction generated using `final_lm_model` (which was derived from the training data analysis) is the relevant prediction from our developed model. The concept of a prediction "based on testing data" doesn't apply in the sense of using a model *trained* on test data. The test data's role was purely for evaluation.
+
+**Reliability:** As noted in the code output, predicting for a car with `wt=6` is an **extrapolation** because the maximum weight in the original `mtcars` dataset (and thus likely in the training/test sets) is significantly lower. Extrapolated predictions are inherently less reliable than predictions made within the range of the training data, as the learned relationships might not hold true far outside that range. The calculated MPG value should be treated with caution.
+
+## Summary and Recommendations
+
+### Summary of Analysis
+
+This analysis aimed to build a predictive model for miles per gallon (MPG) using the `mtcars` dataset. The key steps and findings include:
+
+1.  **Data Preparation:** The `mtcars` dataset was split into training (70%) and testing (30%) sets to facilitate model building and unbiased evaluation.
+2.  **Initial Modeling:** Simple linear regression models were initially fitted for each predictor against `mpg`. Several predictors showed statistically significant relationships (p < 0.05) in isolation.
+3.  **Multicollinearity Handling:**
+    *   A multiple linear regression model using initially significant predictors revealed potential multicollinearity issues.
+    *   Variance Inflation Factor (VIF) analysis was used to iteratively remove predictors with high multicollinearity (VIF >= 10), resulting in a more stable model (`multiple_model` after VIF check).
+    *   LASSO regression was employed as an alternative method, performing automatic variable selection and shrinkage to handle multicollinearity, resulting in the `lasso_model` and subsequently the `final_lm_model` using LASSO-selected predictors.
+4.  **Model Validation:**
+    *   Residual analysis (checking LINE assumptions: Linearity, Independence, Normality, Equal Variance) was performed on the `final_lm_model`. *[Note: The actual results of these tests from the R output should be summarized here - e.g., "Normality assumption was violated based on Shapiro-Wilk test (p=...), while linearity appeared reasonable."]*
+    *   Performance metrics (R-squared, RMSE, MAE) were calculated for the final model on both training and testing datasets to assess goodness-of-fit and generalization ability. *[Note: Key metric values, especially test set R-squared, RMSE, MAE should be mentioned here.]*
+5.  **Prediction:** The final model was used to predict MPG on the test set and for a specific hypothetical car (6000 lbs). The specific prediction highlighted the risks of extrapolation beyond the range of the training data.
+
+### Recommendations (Data Science Approach)
+
+Based on the analysis, the following recommendations are proposed:
+
+1.  **Model Selection:** The LASSO-derived model (`final_lm_model`) is generally preferred due to its built-in variable selection and handling of multicollinearity. However, the choice depends on the specific results of the residual analysis and test set performance compared to the VIF-refined model. If residual assumptions were severely violated, further model refinement or alternative modeling techniques might be needed.
+2.  **Address Assumption Violations:** If the residual analysis indicated significant violations (e.g., non-normality, heteroscedasticity), consider:
+    *   Transforming the dependent variable (`mpg`) or independent variables (e.g., log transformation).
+    *   Using robust regression methods less sensitive to assumption violations.
+    *   Exploring non-linear models (e.g., polynomial regression, GAMs) if linearity was violated.
+3.  **Improve Data Quality/Scope:**
+    *   The `mtcars` dataset is relatively old. Using a more modern and comprehensive dataset with a wider range of vehicle types and features (e.g., engine type, aerodynamics, hybrid status) would likely yield a more relevant and accurate model.
+    *   Collect data covering a broader range for key predictors like weight to reduce the need for extrapolation.
+4.  **Prediction Caution:** Emphasize the unreliability of predictions made outside the range of the data used to train the model (extrapolation). When deploying the model, implement checks to flag predictions that fall into extrapolated regions. Provide prediction intervals alongside point predictions to quantify uncertainty.
+5.  **Further Analysis:**
+    *   Investigate potential interaction effects between predictors (e.g., does the effect of weight on MPG differ for cars with different numbers of cylinders?).
+    *   Consider more advanced techniques like Ridge Regression (if variable selection is less critical than handling multicollinearity) or Elastic Net (a hybrid of LASSO and Ridge).
+    *   If more data were available, techniques like k-fold cross-validation during model building could provide more robust estimates of performance.

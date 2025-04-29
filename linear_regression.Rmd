@@ -6,6 +6,7 @@ output: html_notebook
 ## Shapiro-Wilk normality test for mpg and wt variables
 
 ```{r}
+library(datasets)
 shapiro.test(mtcars$mpg)
 shapiro.test(mtcars$wt)
 ```

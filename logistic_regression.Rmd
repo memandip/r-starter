@@ -1,0 +1,132 @@
+---
+title: "Logistic Regression"
+output: html_notebook
+---
+
+```{r}
+library(readr)
+
+titanic <- read_csv("~/Desktop/projects/r-starter/titanic.csv")
+
+# Remove third column
+data <- titanic[, -3]
+
+# View(titanic)
+
+str(data)
+
+table(data$Pclass)
+```
+
+
+```{r}
+data$Pclass <- as.factor(data$Pclass)
+
+data$Sex <- as.factor(data$Sex)
+
+str(data)
+```
+## Logistic Regression with generalized linear model function
+
+```{r}
+model.full <- glm(Survived ~ ., data=data, family=binomial)
+summary(model.full)
+```
+## McFadden's pseudo R-square
+```{r}
+(mfpr2 <- 1 - (model.full$deviance/model.full$null.deviance))
+```
+
+```{r}
+exp(coef(model.full))
+
+exp(0.31301925)
+
+exp(0.06350032)
+```
+
+```{r}
+library(car)
+
+vif(model.full)
+```
+## Interpretation
+- 
+
+## Confusion matrix of the logistic regression model of full dataset (statistical approach)
+```{r}
+# Prediction
+predict <- predict(model.full, type="response")
+
+# Prediction to binary variable
+predicted.fm <- as.numeric(ifelse(predict > 0.5,1,0))
+
+# Confusion Matrix
+(cm <- table(predicted.fm, data$Survived))
+```
+## Accuracy, error, sensitivity/fnr & sepcificity/fpr
+```{r}
+# Sensitivity, specificity, Accuracy
+
+(accuracy <- sum(diag(cm)) / sum(cm))
+
+(error <- 1 - accuracy)
+
+(sensitivity <- cm[1,1]/cm[1,1]+cm[2,1])
+
+(FNR <- 1 - sensitivity)
+
+(specificity <- cm[2,2]/(cm[2,1]+cm[2,2]))
+
+(FPR <- 1 - specificity)
+```
+
+## Confusion Matrix and diagnostic accuracy from caret package
+```{r}
+library(caret)
+
+predicted <- as.factor(ifelse(predict > 0.5,1,0))
+```
+
+## Fitting Naive Bayes classifier in the train data:
+```{r}
+library(e1071)
+set.seed(17)
+
+# Create index for training set (70% of data)
+train_index <- sample(1:nrow(data), 0.7 * nrow(data))
+
+# Create train and test sets
+train_data <- data[train_index==1, ]
+test_data <- data[train_index==1, ]
+
+# Fitting a model
+model.nb <- naiveBayes(Survived ~ ., data=train_data)
+```
+
+
+```{r}
+y_pred <- predict(model.nb, newdata = test_data)
+
+model.svm <- predict
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

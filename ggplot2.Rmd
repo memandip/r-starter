@@ -12,7 +12,7 @@ ggplot() + layer(data = diamonds, mapping = aes(x = carat, y = price), geom = "p
 ```
 
 ```{r}
-ggplot(diamonds, aes(carat, price)) + geom_point() + scale_x_continuous() + scale_y_continuous()
+ggplot(diamonds, aes(carat, price)) + geom_point() + scale_x_continuous() + scale_y_continuous()`
 ```
 ```{r}
 qplot(carat, price, data = diamonds)
