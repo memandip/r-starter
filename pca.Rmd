@@ -1,0 +1,23 @@
+---
+title: "PCA"
+output: html_notebook
+---
+
+```{r}
+# USArrests data
+head(USArrests)
+str(USArrests)
+USArrests
+```
+
+## Getting criminality scale/score after removing 3rd column i.e. Urban Population and scaling them
+```{r}
+library(dplyr)
+
+USArrests.1 <- USArrests[,-3] %>% scale
+
+# Fitting PCA in the new data
+pca.1 <- prcomp(USArrests.1)
+summary(pca.1)
+```
+
