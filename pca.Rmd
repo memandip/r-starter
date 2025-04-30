@@ -1,5 +1,5 @@
 ---
-title: "PCA"
+title: "PCA (Principal Component Analysis) and MDS (Multidimensional Scaling)"
 output: html_notebook
 ---
 
@@ -19,5 +19,85 @@ USArrests.1 <- USArrests[,-3] %>% scale
 # Fitting PCA in the new data
 pca.1 <- prcomp(USArrests.1)
 summary(pca.1)
+varimax(pca.1$rotation)
 ```
+
+## MDS in USArrests data;
+```{r}
+# Getting scaled data sans 3rd variable
+USArrests.1 <- scale(USArrests[,-3])
+
+# Classical MDS using Kruskall's stress
+# We firest need to get the distance
+
+# Distance calculation
+state.disimilarity <- dist(USArrests.1)
+
+# MDS Fit
+mds.fit <- cmdscale(state.disimilarity)
+
+summary(mds.fit)
+```
+
+## Alternative approach with Sammon's stress
+```{r}
+mds.2 <- MASS::sammon(state.disimilarity, trace = FALSE)
+
+plot(mds.2$points, pch=19)
+abline(h=0, v=0, col="red", lty=2)
+text(mds.2$points, labels = rownames(USArrests), cex=0.7, pos=4)
+
+# Comparing pca.1 (last class) and mds.2 models with annotations
+
+arrows(
+  x0 = pca.1$x[,1], y0 = pca.1$x[,2],
+  x1 = mds.2$points[,1], y1 = mds.2$points[,2],
+  col = "blue", pch = 19
+)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
