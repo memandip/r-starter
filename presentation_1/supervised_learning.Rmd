@@ -39,6 +39,94 @@ head(test_data)
 
 We now fit simple linear regression models for `mpg` against each predictor variable in the training data individually.
 
+### Discussion on whether the models are BLUE
+
+For a linear regression model to be BLUE (Best Linear Unbiased Estimator), it needs to satisfy the Gauss-Markov assumptions:
+
+1. Linear in parameters
+2. Random sampling
+3. No perfect collinearity
+4. Zero conditional mean (exogeneity)
+5. Homoscedasticity (constant variance)
+
+Let's analyze each model:
+
+**Model mpg ~ cyl**
+- Not BLUE
+- Why? Looking at the residuals, there's a pattern suggesting potential non-linearity:
+  - Min: -5.7395, 1Q: -2.0782, Median: -0.1668, 3Q: 1.8832, Max: 6.7605
+  - The uneven spread indicates potential violation of homoscedasticity
+  - Cylinders being a discrete variable also challenges linearity assumption
+
+**Model mpg ~ disp**
+- Not BLUE
+- Why? The residuals show:
+  - Min: -5.2253, 1Q: -2.5131, Median: -0.3223, 3Q: 3.4118, Max: 6.4816
+  - Large spread between Q1 and Q3 suggests potential heteroscedasticity
+  - Displacement likely has a non-linear relationship with mpg
+
+**Model mpg ~ hp**
+- Not BLUE
+- Why? The residuals pattern reveals:
+  - Min: -5.7066, 1Q: -2.5016, Median: -0.8013, 3Q: 1.7575, Max: 7.5066
+  - Skewed residuals (median not close to zero) suggest violation of zero conditional mean
+  - Horsepower typically has a non-linear relationship with mpg
+
+**Model mpg ~ drat**
+- Not BLUE
+- Why? The residuals show:
+  - Min: -5.8547, 1Q: -3.4256, Median: -0.9026, 3Q: 2.4141, Max: 7.9602
+  - Large residual range and skewed distribution suggests violated assumptions
+  - High standard error (1.811) indicates potential efficiency issues
+
+**Model mpg ~ wt**
+- Not BLUE
+- Why? Despite good fit (R² = 0.7316), the residuals:
+  - Min: -4.1223, 1Q: -2.6749, Median: -0.4553, 3Q: 0.8385, Max: 6.2794
+  - Show asymmetric distribution suggesting violation of normality
+  - Weight likely has a non-linear relationship with mpg
+
+**Model mpg ~ qsec**
+- Not BLUE
+- Why? Poor model fit (R² = 0.233) and residuals:
+  - Min: -8.459, 1Q: -4.120, Median: -1.307, 3Q: 3.971, Max: 10.154
+  - Large residual range indicates heteroscedasticity
+  - High standard errors suggest inefficient estimation
+
+**Model mpg ~ vs**
+- Not BLUE
+- Why? Binary predictor issues:
+  - Discrete nature of vs violates linearity assumption
+  - Residuals (Min: -7.482, Max: 8.618) show large spread
+  - Binary predictor cannot capture continuous relationship
+
+**Model mpg ~ am**
+- Not BLUE
+- Why? Similar to vs:
+  - Binary predictor violates linearity
+  - Large residual range (-10.4818 to 8.4182)
+  - Cannot meet BLUE assumptions with binary predictor
+
+**Model mpg ~ gear**
+- Not BLUE
+- Why? Categorical predictor issues:
+  - Discrete nature violates linearity
+  - Poor fit (R² = 0.1936)
+  - Large residual range (-11.1612 to 11.5490)
+
+**Model mpg ~ carb**
+- Not BLUE
+- Why? Discrete predictor issues:
+  - Count data violates continuity assumption
+  - Residuals (-8.026 to 8.429) show heteroscedasticity
+  - Low R² (0.3357) indicates poor fit
+
+In conclusion, none of these simple linear regression models are BLUE because they all violate one or more of the Gauss-Markov assumptions. The main issues are:
+1. Non-linear relationships with mpg
+2. Heteroscedasticity in residuals
+3. Discrete/binary predictors violating linearity assumptions
+4. Potential violations of zero conditional mean
+
 ```{r}
 # Identify predictor variables (exclude 'mpg')
 predictors <- setdiff(names(train_data), "mpg")
