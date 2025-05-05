@@ -1,0 +1,215 @@
+---
+title: "Decision Tree Classifier"
+output: html_notebook
+---
+
+```{r}
+# ignore warning
+options(warn=-1)
+```
+
+
+```{r}
+library(readr)
+```
+
+
+```{r}
+data <- read_csv("~/Desktop/r-starter/Cardiotocographic.csv")
+str(data)
+```
+
+
+```{r}
+data$NSPF <- as.factor(data$NSP)
+str(data$NSPF)
+```
+
+
+```{r}
+set.seed(17)
+library(caret)
+library(party)
+
+ind = sample(2, nrow(data), replace = TRUE, prob = c(0.7, 0.3))
+train = data[ind == 1, ]
+test = data[ind == 2, ]
+
+# Fit the decision tree model with only the first three varibale to learn it today 
+tree <- ctree(NSPF ~ LB+AC+FM, data=train)
+tree
+```
+
+```{r}
+plot(tree)
+```
+
+## Pruning the tree with 99% confidence interval and split at 500 samples
+```{r}
+tree1 <- ctree(NSPF ~ LB+AC+FM, data=train, controls = ctree_control(minsplit = 500, mincriterion = 0.99))
+plot(tree1)
+```
+
+```{r}
+pred <- predict(tree, type="prob")
+```
+
+
+```{r}
+predict(tree, test)
+```
+# Confusion matrix
+```{r}
+(tab <- table(predict(tree), train$NSPF))
+```
+# Accuracy
+```{r}
+accuracy <- sum(diag(tab)) / sum(tab)
+accuracy
+```
+
+# Misclassification error
+```{r}
+mce <- 1 - accuracy
+mce
+```
+
+# Prediction for test data
+```{r}
+pred.test <- predict(tree, newdata=test)
+```
+
+# Confusion Matrix
+```{r}
+(tab1 <- table(pred.test, test$NSPF))
+```
+# Accuracy
+```{r}
+accuracy.test <- sum(diag(tab1)) / sum(tab1)
+accuracy.test
+```
+
+# Misclassification error
+```{r}
+mce.test <- 1 - accuracy.test
+mce.test
+```
+
+# Bagging in R with "ipred" package for CTG data (NSP = dependent variable)
+```{r}
+# Bagging with ipred package
+library(ipred)
+MBTree <- bagging(NSPF ~ LB+AC+FM, data=train, coob=TRUE)
+MBTree
+```
+# Prediction
+```{r}
+MBPrediction <- predict(MBTree, test)
+MBPrediction
+```
+
+# Confusion Matrix
+```{r}
+confusionMatrix(MBPrediction, test$NSPF)
+```
+
+# Random Forest
+```{r}
+library(randomForest)
+set.seed(17)
+# Fitting the random forest model
+rfm <- randomForest(NSPF ~ LB+AC+FM, data=train)
+rfm
+```
+
+```{r}
+library(caret)
+# Prediction
+rfmPrediction <- predict(rfm, train)
+head(rfmPrediction)
+```
+
+```{r}
+head(train$NSPF)
+```
+
+# Confusion Matrix
+```{r}
+confusionMatrix(rfmPrediction, train$NSPF)
+```
+
+# Prediction for test data
+```{r}
+rfmPredictionTest <- predict(rfm, test)
+# Confusion Matrix
+confusionMatrix(rfmPredictionTest, test$NSPF)
+```
+
+```{r}
+plot(rfm)
+```
+
+# We can use "tuneRF" function of the randomForest package but we need to tdefine train as data frame
+```{r}
+train <- as.data.frame(train)
+
+t <- tuneRF(train[,-22], train[,22], ntree=200, ,mtry=4, importance = TRUE, proximity = TRUE, doBest = TRUE, plot=TRUE)
+t
+```
+```{r}
+test <- as.data.frame(test)
+
+t <- tuneRF(test[,-22], test[,22], ntree=200, ,mtry=4, importance = TRUE, proximity = TRUE, doBest = TRUE, plot=TRUE)
+t
+```
+
+# Generalized Boosting Regression Model
+```{r}
+library(caret)
+mod.gbm <- train(NSPF ~ ., data=train, method="gbm", verbose=FALSE)
+print(mod.gbm)
+```
+
+```{r}
+library(caret)
+mod.xgb <- train(NSPF ~ ., data=train, method="xgbTree", verbose=TRUE)
+```
+
+```{r}
+print(mod.xgb)
+summary(mod.xgb)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
