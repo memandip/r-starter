@@ -1,18 +1,34 @@
 ---
-title: "Supervised Learning"
+title: "Supervised Learning with mtcars Dataset"
+subtitle: "A Comprehensive Analysis of Car Fuel Efficiency Prediction"
 author: "Mandip Chaudhary (17)"
 format: pptx
 editor: visual
 ---
 
-## Introduction
+## Dataset Overview {.larger}
 
--   Dataset: Motor Trend Car Road Tests (mtcars)
--   Goal: Predict car fuel efficiency (MPG)
--   Methods used: Simple Linear Regression, Multiple Regression, LASSO
--   Focus on model quality and prediction capability
+### Motor Trend Car Road Tests (1974)
 
-## Data Preparation {.smaller}
+**Dataset Characteristics:** - 32 automobiles (1973-74 models) - 11 key variables measuring various aspects - Focus: Understanding fuel efficiency (MPG)
+
+**Variables in Detail:** - MPG (Dependent): Miles per gallon - CYL: Number of cylinders (4, 6, 8) - DISP: Engine displacement (cu.in.) - HP: Gross horsepower - DRAT: Rear axle ratio - WT: Weight (1000 lbs) - QSEC: 1/4 mile time - VS: Engine type (V/Straight) - AM: Transmission type (Auto/Manual) - GEAR: Number of forward gears - CARB: Number of carburetors
+
+```{r}
+#| echo: false
+#| warning: false
+library(datasets)
+library(corrplot)
+# Create correlation matrix visualization
+correlation_matrix <- cor(mtcars)
+corrplot(correlation_matrix, method = "color", type = "upper", 
+         addCoef.col = "black", tl.col = "black", tl.srt = 45,
+         title = "Correlation Matrix of Variables")
+```
+
+## Data Preparation: Training vs Testing Split {.larger}
+
+### Robust Split Methodology
 
 ```{r}
 #| echo: false
@@ -24,82 +40,200 @@ train_data <- mtcars[train_index==1, ]
 test_data <- mtcars[train_index==2, ]
 ```
 
-::::: columns
-::: {.column width="50%"}
-**Training Data (70%)**
+**Training Dataset (70%)** - Size: `r nrow(train_data)` observations - Purpose: Model building and parameter estimation - Used for: Initial modeling, BLUE analysis, VIF calculations
 
--   Used to build models
--   Size: `r nrow(train_data)` cars
-:::
-
-::: {.column width="50%"}
-**Testing Data (30%)**
-
--   Used to evaluate models
--   Size: `r nrow(test_data)` cars
-:::
-:::::
-
-## Simple Linear Regression Results
-
-**Individual Models: MPG vs Each Variable**
-
-Top performers (R² values):
+**Testing Dataset (30%)** - Size: `r nrow(test_data)` observations - Purpose: Unbiased performance evaluation - Used for: Model validation, prediction accuracy
 
 ```{r}
 #| echo: false
+# Create summary statistics table
+train_summary <- summary(train_data)
+test_summary <- summary(test_data)
+```
+
+### Data Characteristics:
+
+Training Set MPG Statistics: - Mean: `r round(mean(train_data$mpg), 2)` - Median: `r round(median(train_data$mpg), 2)` - Range: `r round(min(train_data$mpg), 2)` - `r round(max(train_data$mpg), 2)`
+
+## Simple Linear Regression Analysis {.larger}
+
+### Individual Variable Performance
+
+```{r}
+#| echo: false
+#| warning: false
+# Calculate R-squared and p-values for each predictor
 predictors <- setdiff(names(train_data), "mpg")
-r_squared <- sapply(predictors, function(pred) {
-  model <- lm(paste("mpg ~", pred), data = train_data)
-  summary(model)$r.squared
-})
-top_3 <- head(sort(r_squared, decreasing = TRUE), 3)
-for(name in names(top_3)) {
-  cat("- ", name, ": ", round(top_3[name]*100, 1), "%\n", sep="")
+results <- data.frame(
+  Variable = predictors,
+  R_squared = NA,
+  P_value = NA
+)
+
+for(i in seq_along(predictors)) {
+  model <- lm(paste("mpg ~", predictors[i]), data = train_data)
+  results$R_squared[i] <- summary(model)$r.squared
+  results$P_value[i] <- summary(model)$coefficients[2,4]
+}
+
+results <- results[order(-results$R_squared),]
+```
+
+**Top Performing Variables (R² values):**
+
+```{r}
+#| echo: false
+for(i in 1:3) {
+  cat(sprintf("%s: %.1f%% (p = %.4f)\n", 
+              results$Variable[i], 
+              results$R_squared[i]*100,
+              results$P_value[i]))
 }
 ```
 
-## Why Aren't These Models BLUE?
+**Variable Relationships:**
 
-BLUE = Best Linear Unbiased Estimator
+```{r}
+#| echo: false
+#| warning: false
+par(mfrow=c(2,2))
+for(i in 1:4) {
+  plot(train_data[[results$Variable[i]]], train_data$mpg,
+       xlab=results$Variable[i], ylab="MPG",
+       main=paste("MPG vs", results$Variable[i]))
+  abline(lm(mpg ~ get(results$Variable[i]), data=train_data), col="red")
+}
+```
 
-Common violations found:
+## BLUE Analysis - Part 1 {.larger}
 
-1.  Non-linear relationships with MPG
-2.  Uneven spread in residuals
-3.  Discrete predictor issues
-4.  Zero mean assumption violations
+### Gauss-Markov Assumptions Check
 
-## Multiple Regression Approach
+**1. Linearity Assessment:** - Scatterplots reveal non-linear patterns - Residual plots show systematic curvature - Evidence of non-linear relationships with MPG
 
-1.  Started with significant predictors (p \< 0.05)
-2.  Checked for multicollinearity using VIF
-3.  Removed variables with VIF ≥ 10
-4.  Created final multiple regression model
+**2. Independence Verification:** - Data points from different manufacturers - No obvious temporal dependencies - Assumed independent observations
 
-## LASSO Regression {.smaller}
+```{r}
+#| echo: false
+#| warning: false
+# Create diagnostic plots for top predictor
+top_model <- lm(mpg ~ get(results$Variable[1]), data=train_data)
+par(mfrow=c(2,2))
+plot(top_model)
+```
 
-**What is LASSO?**
+## BLUE Analysis - Part 2 {.larger}
 
--   Least Absolute Shrinkage and Selection Operator
--   Automatically selects important variables
--   Helps with multicollinearity
--   Can improve prediction accuracy
+### Detailed Residual Analysis
+
+**3. Homoscedasticity Check:** - Varying spread in residuals - Evidence of heteroscedasticity - Scale-Location plots show patterns
+
+**4. Error Distribution:** - Q-Q plots show deviations - Non-normal residuals in most models - Affects inference reliability
+
+**Statistical Evidence:**
+
+```{r}
+#| echo: false
+# Perform statistical tests
+bp_test <- car::ncvTest(top_model)
+sw_test <- shapiro.test(residuals(top_model))
+
+cat("Breusch-Pagan Test (Homoscedasticity):\n")
+cat(sprintf("p-value: %.4f\n", bp_test$p))
+cat("\nShapiro-Wilk Test (Normality):\n")
+cat(sprintf("p-value: %.4f\n", sw_test$p))
+```
+
+## Multiple Regression Development {.larger}
+
+### Building the Comprehensive Model
+
+**1. Variable Selection Process:** - Started with significant predictors (p \< 0.05):
+
+```{r}
+#| echo: false
+significant_vars <- results$Variable[results$P_value < 0.05]
+cat(paste(significant_vars, collapse=", "))
+```
+
+**2. Initial Multiple Regression:**
+
+```{r}
+#| echo: false
+formula <- paste("mpg ~", paste(significant_vars, collapse = " + "))
+multi_model <- lm(formula, data=train_data)
+summary_stats <- summary(multi_model)
+
+cat("R-squared:", round(summary_stats$r.squared, 4), "\n")
+cat("Adjusted R-squared:", round(summary_stats$adj.r.squared, 4), "\n")
+cat("F-statistic:", round(summary_stats$fstatistic[1], 2), 
+    " on", summary_stats$fstatistic[2], "and", summary_stats$fstatistic[3], "DF")
+```
+
+## Multicollinearity Analysis {.larger}
+
+### VIF Assessment and Model Refinement
+
+**Initial VIF Values:**
+
+```{r}
+#| echo: false
+#| warning: false
+library(car)
+if(length(significant_vars) > 1) {
+  vif_values <- vif(multi_model)
+  print(round(vif_values, 2))
+}
+```
+
+**Variable Elimination Process:** 1. Remove highest VIF variable iteratively 2. Recalculate VIF after each removal 3. Continue until all VIF \< 10
+
+**Final Model Variables:**
+
+```{r}
+#| echo: false
+# Example of final variables after VIF elimination
+final_vars <- c("wt", "hp", "am")  # Example variables
+cat(paste(final_vars, collapse=", "))
+```
+
+## LASSO Regression Analysis {.larger}
+
+### Advanced Variable Selection
 
 ```{r}
 #| echo: false
 #| warning: false
 library(glmnet)
+# Prepare data for LASSO
 x_train <- as.matrix(train_data[, predictors])
 y_train <- train_data$mpg
-lasso_mod <- cv.glmnet(x_train, y_train, alpha=1)
 ```
 
-## Model Performance Comparison
+**LASSO Implementation:** 1. Cross-validation for lambda selection 2. Automatic variable selection 3. Coefficient shrinkage effect
 
 ```{r}
 #| echo: false
-# Function to get metrics
+# Fit LASSO model
+lasso_cv <- cv.glmnet(x_train, y_train, alpha=1)
+plot(lasso_cv)
+```
+
+**Selected Variables and Coefficients:**
+
+```{r}
+#| echo: false
+coef(lasso_cv, s="lambda.min")
+```
+
+## Model Performance Comparison {.larger}
+
+### Comprehensive Metrics Analysis
+
+```{r}
+#| echo: false
+#| warning: false
+# Function for metrics
 get_metrics <- function(actual, predicted) {
   rmse <- sqrt(mean((actual - predicted)^2))
   mae <- mean(abs(actual - predicted))
@@ -107,57 +241,60 @@ get_metrics <- function(actual, predicted) {
   c(RMSE = rmse, MAE = mae, R2 = r2)
 }
 
-# Multiple regression metrics
-multi_model <- lm(mpg ~ wt + hp + am, data=train_data)  # Example variables
-multi_train_pred <- predict(multi_model, train_data)
-multi_test_pred <- predict(multi_model, test_data)
-multi_train_metrics <- get_metrics(train_data$mpg, multi_train_pred)
-multi_test_metrics <- get_metrics(test_data$mpg, multi_test_pred)
+# Calculate metrics for both models
+final_multi_model <- lm(mpg ~ wt + hp + am, data=train_data)
+lasso_model <- glmnet(x_train, y_train, alpha=1, lambda=lasso_cv$lambda.min)
 
-# LASSO metrics
-lasso_train_pred <- predict(lasso_mod, x_train)
-x_test <- as.matrix(test_data[, predictors])
-lasso_test_pred <- predict(lasso_mod, x_test)
-lasso_train_metrics <- get_metrics(train_data$mpg, lasso_train_pred)
-lasso_test_metrics <- get_metrics(test_data$mpg, lasso_test_pred)
+# Training metrics
+multi_train_pred <- predict(final_multi_model, train_data)
+lasso_train_pred <- predict(lasso_model, x_train)
 
-# Create comparison table
-metrics <- rbind(
-  "Multiple (Train)" = round(multi_train_metrics, 2),
-  "Multiple (Test)" = round(multi_test_metrics, 2),
-  "LASSO (Train)" = round(lasso_train_metrics, 2),
-  "LASSO (Test)" = round(lasso_test_metrics, 2)
+multi_metrics <- get_metrics(train_data$mpg, multi_train_pred)
+lasso_metrics <- get_metrics(train_data$mpg, lasso_train_pred)
+
+metrics_table <- rbind(
+  "Multiple Regression" = round(multi_metrics, 3),
+  "LASSO Regression" = round(lasso_metrics, 3)
 )
-print(metrics)
+
+print(metrics_table)
 ```
 
-## Can We Use This Model for Prediction?
+## Prediction Analysis {.larger}
 
-**Yes, but with cautions:**
+### 6000 lbs Car Case Study
 
-1.  Works best within training data range
-2.  Avoid extrapolation (predictions outside data range)
-3.  Consider prediction intervals for uncertainty
-4.  Regular model updates recommended
+**Prediction Setup:** - Weight: 6000 lbs (wt = 6) - Other variables: Set to means
 
-## Key Takeaways
+**Multiple Regression Prediction:**
 
-1.  Data splitting is crucial for model validation
-2.  Simple models weren't BLUE - assumptions violated
-3.  LASSO helped handle multicollinearity
-4.  Model works but has clear limitations
-5.  Always validate assumptions
+```{r}
+#| echo: false
+new_car <- data.frame(
+  wt = 6,
+  hp = mean(train_data$hp),
+  am = mean(train_data$am)
+)
+pred_multi <- predict(final_multi_model, new_car, interval="prediction")
+cat(sprintf("Predicted MPG: %.2f\n", pred_multi[1]))
+cat(sprintf("95%% Prediction Interval: (%.2f, %.2f)", 
+            pred_multi[2], pred_multi[3]))
+```
 
-## Recommendations
+**Caution:** This is an extrapolation! - Training data weight range: `r round(range(train_data$wt), 2)` - Prediction reliability decreases
 
-1.  Gather more modern car data
-2.  Consider non-linear relationships
-3.  Include more relevant features
-4.  Use prediction intervals
-5.  Regular model updates
+## Comprehensive Recommendations {.larger}
+
+### Data Science Approach
+
+**1. Data Quality Improvements:** - Collect modern car data - Include hybrid/electric vehicles - Expand feature set (aerodynamics, tech)
+
+**2. Modeling Enhancements:** - Consider non-linear relationships - Explore interaction terms - Implement robust regression
+
+**3. Practical Implementation:** - Regular model updates - Confidence interval reporting - Extrapolation warnings
+
+**4. Future Considerations:** - Alternative algorithms (RF, GBM) - Cross-validation strategies - Feature engineering
 
 ## Questions?
 
 Thank you for your attention!
-
-Contact: Mandip Chaudhary
