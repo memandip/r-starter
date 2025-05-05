@@ -2,18 +2,17 @@
 title: "Supervised Learning"
 author: "Mandip Chaudhary"
 date: "`r Sys.Date()`"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
-## Splitting the mtcars dataset into Training and Testing Sets
-
-We'll split the mtcars dataset into training (70%) and testing (30%) sets using random sampling.
+# 1. Divide "mtcars" dataset as training data (70% random cases) and testing data (30% random cases) using "sample" in r
 
 ```{r}
 library(datasets)
 # Set random seed for reproducibility
-set.seed(123)
-
+set.seed(17)
 # Get row indices for training set (70% of data)
 train_index <- sample(2, nrow(mtcars), replace = T, prob = c(0.7, 0.3))
 
@@ -36,7 +35,7 @@ head(train_data)
 head(test_data)
 ```
 
-## Simple Linear Regression Models and BLUE
+# 2. Fit simple linear regression models on training data with mpg as dependent and all other variables as independent variables one by one i.e. separately. Are these models BLUE? Why?
 
 We now fit simple linear regression models for `mpg` against each predictor variable in the training data individually.
 
@@ -65,9 +64,7 @@ According to the Gauss-Markov theorem, the Ordinary Least Squares (OLS) estimato
 
 In each of these simple regression models, if the assumptions above are met, the OLS estimates will be BLUE, meaning they have the smallest variance among all linear unbiased estimators. However, if any of these assumptions are violated—for instance, if there is heteroscedasticity or non-linearity—the estimators may no longer be considered BLUE.
 
-## Statistically Significant Variables
-
-Below is the code to extract statistically significant predictors (with p < 0.05) based on the simple linear regression models:
+# 3. Identify the statistically significant (p<0.05) independent variables from simple linear regression models as potential candidate variables for the final model and list them for next step
 
 ```{r}
 # Create a data frame to store variable significance
@@ -85,9 +82,7 @@ cat("Statistically significant variables (p < 0.05):\n")
 print(significant_vars)
 ```
 
-## Multiple Linear Regression Model
-
-Now, we fit a multiple linear regression model using only the statistically significant variables identified above.
+# 4.  Fit a multiple linear regression model on training data with mpg as dependent and all the statistically significant variables from simple linear regression models
 
 ```{r}
 # Check if there are any significant variables
@@ -107,7 +102,7 @@ if (nrow(significant_vars) > 0) {
 }
 ```
 
-## Checking for Multicollinearity using VIF
+# 5. Get VIF of all these variables to check multicollinearity and run the final model until none of the variables have VIF >= 10
 
 We will now check for multicollinearity among the predictors in the multiple regression model using the Variance Inflation Factor (VIF). A common rule of thumb is that VIF values greater than or equal to 10 indicate problematic multicollinearity. We will iteratively remove the variable with the highest VIF until all remaining variables have VIF < 10.
 
@@ -186,7 +181,7 @@ if (exists("multiple_model") && length(coef(multiple_model)) > 2) {
 }
 ```
 
-## Model Performance Metrics
+# 6. Get summary and accuracy indices (R-square, RMSE, MAE) of the final model fitted with variables having VIF < 10
 
 ```{r}
 # Check if the final model exists before calculating metrics
@@ -247,7 +242,7 @@ if (!is.null(multiple_model)) {
 }
 ```
 
-## LASSO Regression
+# 7. Use lasso regularization as alternative to deal with multicollinearity, show the results in the PPT and explain them well
 
 LASSO (Least Absolute Shrinkage and Selection Operator) is another method to handle multicollinearity and perform variable selection by shrinking some coefficients exactly to zero.
 
@@ -306,7 +301,7 @@ if (exists("calculate_metrics")) {
 }
 ```
 
-## Residual Analysis for Final (LASSO) Model
+# 8. Perform residual analysis on the final model using LINE tests. Can you do prediction using this model? Why?
 
 We perform residual analysis on the final model derived from LASSO to check if the assumptions of linear regression (LINE: Linearity, Independence, Normality, Equal Variance) are met. Standard diagnostic tests often require an `lm` object. We will fit an `lm` model using only the predictors selected by LASSO for this purpose.
 
@@ -408,7 +403,7 @@ Whether the final model (derived from LASSO and potentially refined by diagnosti
 
 **Conclusion:** Yes, you can likely use this model for prediction *if* the residual analysis does not reveal major violations of assumptions *and* the performance metrics on the test dataset (RMSE, MAE) are acceptably low for your purpose. The LASSO approach often yields models with good predictive performance, especially when dealing with multicollinearity or high-dimensional data.
 
-## Prediction on Test Data and Accuracy Assessment
+# 9. Perform residual analysis on the final model using LINE tests. Can you do prediction using this model? Why?
 
 Finally, we use the refined `lm` model (built using predictors selected by LASSO) to predict `mpg` on the unseen test data and evaluate its predictive accuracy using R-squared, RMSE, and MAE.
 
@@ -478,7 +473,7 @@ if (!is.null(final_lm_model)) {
 
 **Overall Assessment:** By comparing these test set metrics (R-squared, RMSE, MAE) to the corresponding metrics calculated on the *training data* earlier, we can assess potential overfitting. If the test metrics are significantly worse (e.g., much lower R-squared, much higher RMSE/MAE) than the training metrics, the model might be overfit to the training data and may not generalize well. If the metrics are reasonably close, it suggests the model generalizes well to new, unseen data. The absolute values of RMSE and MAE provide a sense of the typical prediction error magnitude.
 
-## Prediction for a Specific Car (6000 lbs)
+# 10. Predict the mpg on testing data, get accuracy indices (R-square, RMSE, MAE) of prediction and interpret them carefully 
 
 Let's predict the `mpg` for a hypothetical car weighing 6000 lbs (wt = 6, since `wt` is in 1000s of lbs) using our final `lm` model derived from LASSO selection.
 
