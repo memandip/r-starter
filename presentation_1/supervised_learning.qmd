@@ -1,0 +1,163 @@
+---
+title: "Supervised Learning"
+author: "Mandip Chaudhary (17)"
+format: pptx
+editor: visual
+---
+
+## Introduction
+
+-   Dataset: Motor Trend Car Road Tests (mtcars)
+-   Goal: Predict car fuel efficiency (MPG)
+-   Methods used: Simple Linear Regression, Multiple Regression, LASSO
+-   Focus on model quality and prediction capability
+
+## Data Preparation {.smaller}
+
+```{r}
+#| echo: false
+#| warning: false
+library(datasets)
+set.seed(17)
+train_index <- sample(2, nrow(mtcars), replace = T, prob = c(0.7, 0.3))
+train_data <- mtcars[train_index==1, ]
+test_data <- mtcars[train_index==2, ]
+```
+
+::::: columns
+::: {.column width="50%"}
+**Training Data (70%)**
+
+-   Used to build models
+-   Size: `r nrow(train_data)` cars
+:::
+
+::: {.column width="50%"}
+**Testing Data (30%)**
+
+-   Used to evaluate models
+-   Size: `r nrow(test_data)` cars
+:::
+:::::
+
+## Simple Linear Regression Results
+
+**Individual Models: MPG vs Each Variable**
+
+Top performers (R² values):
+
+```{r}
+#| echo: false
+predictors <- setdiff(names(train_data), "mpg")
+r_squared <- sapply(predictors, function(pred) {
+  model <- lm(paste("mpg ~", pred), data = train_data)
+  summary(model)$r.squared
+})
+top_3 <- head(sort(r_squared, decreasing = TRUE), 3)
+for(name in names(top_3)) {
+  cat("- ", name, ": ", round(top_3[name]*100, 1), "%\n", sep="")
+}
+```
+
+## Why Aren't These Models BLUE?
+
+BLUE = Best Linear Unbiased Estimator
+
+Common violations found:
+
+1.  Non-linear relationships with MPG
+2.  Uneven spread in residuals
+3.  Discrete predictor issues
+4.  Zero mean assumption violations
+
+## Multiple Regression Approach
+
+1.  Started with significant predictors (p \< 0.05)
+2.  Checked for multicollinearity using VIF
+3.  Removed variables with VIF ≥ 10
+4.  Created final multiple regression model
+
+## LASSO Regression {.smaller}
+
+**What is LASSO?**
+
+-   Least Absolute Shrinkage and Selection Operator
+-   Automatically selects important variables
+-   Helps with multicollinearity
+-   Can improve prediction accuracy
+
+```{r}
+#| echo: false
+#| warning: false
+library(glmnet)
+x_train <- as.matrix(train_data[, predictors])
+y_train <- train_data$mpg
+lasso_mod <- cv.glmnet(x_train, y_train, alpha=1)
+```
+
+## Model Performance Comparison
+
+```{r}
+#| echo: false
+# Function to get metrics
+get_metrics <- function(actual, predicted) {
+  rmse <- sqrt(mean((actual - predicted)^2))
+  mae <- mean(abs(actual - predicted))
+  r2 <- 1 - sum((actual - predicted)^2)/sum((actual - mean(actual))^2)
+  c(RMSE = rmse, MAE = mae, R2 = r2)
+}
+
+# Multiple regression metrics
+multi_model <- lm(mpg ~ wt + hp + am, data=train_data)  # Example variables
+multi_train_pred <- predict(multi_model, train_data)
+multi_test_pred <- predict(multi_model, test_data)
+multi_train_metrics <- get_metrics(train_data$mpg, multi_train_pred)
+multi_test_metrics <- get_metrics(test_data$mpg, multi_test_pred)
+
+# LASSO metrics
+lasso_train_pred <- predict(lasso_mod, x_train)
+x_test <- as.matrix(test_data[, predictors])
+lasso_test_pred <- predict(lasso_mod, x_test)
+lasso_train_metrics <- get_metrics(train_data$mpg, lasso_train_pred)
+lasso_test_metrics <- get_metrics(test_data$mpg, lasso_test_pred)
+
+# Create comparison table
+metrics <- rbind(
+  "Multiple (Train)" = round(multi_train_metrics, 2),
+  "Multiple (Test)" = round(multi_test_metrics, 2),
+  "LASSO (Train)" = round(lasso_train_metrics, 2),
+  "LASSO (Test)" = round(lasso_test_metrics, 2)
+)
+print(metrics)
+```
+
+## Can We Use This Model for Prediction?
+
+**Yes, but with cautions:**
+
+1.  Works best within training data range
+2.  Avoid extrapolation (predictions outside data range)
+3.  Consider prediction intervals for uncertainty
+4.  Regular model updates recommended
+
+## Key Takeaways
+
+1.  Data splitting is crucial for model validation
+2.  Simple models weren't BLUE - assumptions violated
+3.  LASSO helped handle multicollinearity
+4.  Model works but has clear limitations
+5.  Always validate assumptions
+
+## Recommendations
+
+1.  Gather more modern car data
+2.  Consider non-linear relationships
+3.  Include more relevant features
+4.  Use prediction intervals
+5.  Regular model updates
+
+## Questions?
+
+Thank you for your attention!
+
+Contact: Mandip Chaudhary
