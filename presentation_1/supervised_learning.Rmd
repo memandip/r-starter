@@ -39,7 +39,30 @@ head(test_data)
 
 We now fit simple linear regression models for `mpg` against each predictor variable in the training data individually.
 
-### Discussion on whether the models are BLUE
+```{r}
+# Identify predictor variables (exclude 'mpg')
+predictors <- setdiff(names(train_data), "mpg")
+models <- list()
+
+# Fit models one by one and display summaries
+for (pred in predictors) {
+  formula <- as.formula(paste("mpg ~", pred))
+  models[[pred]] <- lm(formula, data = train_data)
+  cat("Model for mpg ~", pred, "\n")
+  print(summary(models[[pred]]))
+  cat("\n")
+}
+```
+
+### Discussion on BLUE
+
+According to the Gauss-Markov theorem, the Ordinary Least Squares (OLS) estimator is the Best Linear Unbiased Estimator (BLUE) provided that the following assumptions hold:
+- **Linearity:** The relationship between the dependent and independent variable is linear.
+- **Independence:** The error terms are independent.
+- **Homoscedasticity:** The error terms have constant variance.
+- **Unbiasedness:** The error term has an expected value of zero.
+
+In each of these simple regression models, if the assumptions above are met, the OLS estimates will be BLUE, meaning they have the smallest variance among all linear unbiased estimators. However, if any of these assumptions are violated—for instance, if there is heteroscedasticity or non-linearity—the estimators may no longer be considered BLUE.
 
 For a linear regression model to be BLUE (Best Linear Unbiased Estimator), it needs to satisfy the Gauss-Markov assumptions:
 
@@ -126,31 +149,6 @@ In conclusion, none of these simple linear regression models are BLUE because th
 2. Heteroscedasticity in residuals
 3. Discrete/binary predictors violating linearity assumptions
 4. Potential violations of zero conditional mean
-
-```{r}
-# Identify predictor variables (exclude 'mpg')
-predictors <- setdiff(names(train_data), "mpg")
-models <- list()
-
-# Fit models one by one and display summaries
-for (pred in predictors) {
-  formula <- as.formula(paste("mpg ~", pred))
-  models[[pred]] <- lm(formula, data = train_data)
-  cat("Model for mpg ~", pred, "\n")
-  print(summary(models[[pred]]))
-  cat("\n")
-}
-```
-
-### Discussion on BLUE
-
-According to the Gauss-Markov theorem, the Ordinary Least Squares (OLS) estimator is the Best Linear Unbiased Estimator (BLUE) provided that the following assumptions hold:
-- **Linearity:** The relationship between the dependent and independent variable is linear.
-- **Independence:** The error terms are independent.
-- **Homoscedasticity:** The error terms have constant variance.
-- **Unbiasedness:** The error term has an expected value of zero.
-
-In each of these simple regression models, if the assumptions above are met, the OLS estimates will be BLUE, meaning they have the smallest variance among all linear unbiased estimators. However, if any of these assumptions are violated—for instance, if there is heteroscedasticity or non-linearity—the estimators may no longer be considered BLUE.
 
 # 3. Identify the statistically significant (p<0.05) independent variables from simple linear regression models as potential candidate variables for the final model and list them for next step
 
