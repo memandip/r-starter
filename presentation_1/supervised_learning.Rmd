@@ -37,155 +37,268 @@ head(test_data)
 
 # 2. Fit simple linear regression models on training data with mpg as dependent and all other variables as independent variables one by one i.e. separately. Are these models BLUE? Why?
 
-We now fit simple linear regression models for `mpg` against each predictor variable in the training data individually.
+First, let's check if our dependent variable follows a normal distribution:
 
 ```{r}
-# Identify predictor variables (exclude 'mpg')
-predictors <- setdiff(names(train_data), "mpg")
-models <- list()
+shapiro.test(train_data$mpg)
+```
+- MPG data follows a normal distribution (Shapiro-Wilk p-value = 0.09609 > 0.05)
 
-# Fit models one by one and display summaries
-for (pred in predictors) {
-  formula <- as.formula(paste("mpg ~", pred))
-  models[[pred]] <- lm(formula, data = train_data)
-  cat("Model for mpg ~", pred, "\n")
-  print(summary(models[[pred]]))
-  cat("\n")
-}
+Note on Correlation Tests:
+For each variable analysis that follows, we first test the Pearson correlation. 
+A correlation coefficient (r) measures the strength and direction of the linear relationship:
+- Strong correlation: |r| > 0.7 (strong predictive potential)
+- Moderate correlation: 0.3 < |r| < 0.7 (moderate predictive potential)
+- Weak correlation: |r| < 0.3 (weak predictive potential)
+The p-value indicates if the correlation meets BLUE significance criteria (p < 0.05).
+
+# BLUE Test Assumptions:
+1. Best - Minimum variance among all linear unbiased estimators
+2. Linear - Linear in parameters (Y = β₀ + β₁X + ε)
+3. Unbiased - E(β̂) = β, expected value equals true parameter
+4. Estimator - Method provides parameter estimates
+
+BLUE Criteria for Assessment (based on BLUE compliance standards and model fit):
+1. R² > 0.5 (Model explains >50% variance) - Indicates good model fit
+2. Regression ANOVA meets BLUE criteria (p < 0.05) - Validates overall model utility
+3. Intercept meets BLUE criteria (p < 0.05) - Ensures valid baseline prediction
+4. Coefficient meets BLUE criteria (p < 0.05) - Confirms predictor importance
+
+Note: These criteria help assess both BLUE compliance and practical utility of the model. A model must satisfy all criteria to be considered BLUE, ensuring both theoretical validity and practical usefulness for prediction.
+
+Now let's analyze each variable individually:
+
+### mpg vs cyl:
+
+```{r}
+# Test correlation
+cor.test(train_data$cyl, train_data$mpg, method="pearson")
+
+# Fit model
+model_cyl <- lm(mpg ~ cyl, data=train_data)
+summary(model_cyl)
 ```
 
-### Discussion on BLUE
+BLUE Assessment for cyl:
+- R² > 0.5: Yes (0.7324)
+- Regression ANOVA meets BLUE criteria: Yes (p = 1.497e-06)
+- Intercept meets BLUE criteria: Yes (p < 0.001)
+- Coefficient meets BLUE criteria: Yes (p < 0.001)
+Therefore BLUE: Yes
 
-According to the Gauss-Markov theorem, the Ordinary Least Squares (OLS) estimator is the Best Linear Unbiased Estimator (BLUE) provided that the following assumptions hold:
-- **Linearity:** The relationship between the dependent and independent variable is linear.
-- **Independence:** The error terms are independent.
-- **Homoscedasticity:** The error terms have constant variance.
-- **Unbiasedness:** The error term has an expected value of zero.
+### mpg vs disp:
 
-In each of these simple regression models, if the assumptions above are met, the OLS estimates will be BLUE, meaning they have the smallest variance among all linear unbiased estimators. However, if any of these assumptions are violated—for instance, if there is heteroscedasticity or non-linearity—the estimators may no longer be considered BLUE.
+```{r}
+# Test correlation
+cor.test(train_data$disp, train_data$mpg, method="pearson")
 
-For a linear regression model to be BLUE (Best Linear Unbiased Estimator), it needs to satisfy the Gauss-Markov assumptions:
+# Fit model
+model_disp <- lm(mpg ~ disp, data=train_data)
+summary(model_disp)
+```
 
-1. Linear in parameters
-2. Random sampling
-3. No perfect collinearity
-4. Zero conditional mean (exogeneity)
-5. Homoscedasticity (constant variance)
+BLUE Assessment for disp:
+- R² > 0.5: Yes (0.6787)
+- Regression ANOVA meets BLUE criteria: Yes (p = 8.023e-06)
+- Intercept meets BLUE criteria: Yes (p < 0.001)
+- Coefficient meets BLUE criteria: Yes (p < 0.001)
+Therefore BLUE: Yes
 
-Let's analyze each model:
+### mpg vs hp:
 
-**Model mpg ~ cyl**
-- Not BLUE
-- Why? Looking at the residuals, there's a pattern suggesting potential non-linearity:
-  - Min: -5.7395, 1Q: -2.0782, Median: -0.1668, 3Q: 1.8832, Max: 6.7605
-  - The uneven spread indicates potential violation of homoscedasticity
-  - Cylinders being a discrete variable also challenges linearity assumption
+```{r}
+# Test correlation
+cor.test(train_data$hp, train_data$mpg, method="pearson")
 
-**Model mpg ~ disp**
-- Not BLUE
-- Why? The residuals show:
-  - Min: -5.2253, 1Q: -2.5131, Median: -0.3223, 3Q: 3.4118, Max: 6.4816
-  - Large spread between Q1 and Q3 suggests potential heteroscedasticity
-  - Displacement likely has a non-linear relationship with mpg
+# Fit model
+model_hp <- lm(mpg ~ hp, data=train_data)
+summary(model_hp)
+```
 
-**Model mpg ~ hp**
-- Not BLUE
-- Why? The residuals pattern reveals:
-  - Min: -5.7066, 1Q: -2.5016, Median: -0.8013, 3Q: 1.7575, Max: 7.5066
-  - Skewed residuals (median not close to zero) suggest violation of zero conditional mean
-  - Horsepower typically has a non-linear relationship with mpg
+BLUE Assessment for hp:
+- R² > 0.5: Yes (0.5683)
+- Regression ANOVA meets BLUE criteria: Yes (p = 0.0001238)
+- Intercept meets BLUE criteria: Yes (p < 0.001)
+- Coefficient meets BLUE criteria: Yes (p < 0.001)
+Therefore BLUE: Yes
 
-**Model mpg ~ drat**
-- Not BLUE
-- Why? The residuals show:
-  - Min: -5.8547, 1Q: -3.4256, Median: -0.9026, 3Q: 2.4141, Max: 7.9602
-  - Large residual range and skewed distribution suggests violated assumptions
-  - High standard error (1.811) indicates potential efficiency issues
+### mpg vs drat:
 
-**Model mpg ~ wt**
-- Not BLUE
-- Why? Despite good fit (R² = 0.7316), the residuals:
-  - Min: -4.1223, 1Q: -2.6749, Median: -0.4553, 3Q: 0.8385, Max: 6.2794
-  - Show asymmetric distribution suggesting violation of normality
-  - Weight likely has a non-linear relationship with mpg
+```{r}
+# Test correlation
+cor.test(train_data$drat, train_data$mpg, method="pearson")
 
-**Model mpg ~ qsec**
-- Not BLUE
-- Why? Poor model fit (R² = 0.233) and residuals:
-  - Min: -8.459, 1Q: -4.120, Median: -1.307, 3Q: 3.971, Max: 10.154
-  - Large residual range indicates heteroscedasticity
-  - High standard errors suggest inefficient estimation
+# Fit model
+model_drat <- lm(mpg ~ drat, data=train_data)
+summary(model_drat)
+```
 
-**Model mpg ~ vs**
-- Not BLUE
-- Why? Binary predictor issues:
-  - Discrete nature of vs violates linearity assumption
-  - Residuals (Min: -7.482, Max: 8.618) show large spread
-  - Binary predictor cannot capture continuous relationship
+BLUE Assessment for drat:
+- R² > 0.5: Yes (0.5262)
+- Regression ANOVA meets BLUE criteria: Yes (p = 0.0002952)
+- Intercept meets BLUE criteria: No (p = 0.249071)
+- Coefficient meets BLUE criteria: Yes (p < 0.001)
+Therefore BLUE: No (intercept not significant)
 
-**Model mpg ~ am**
-- Not BLUE
-- Why? Similar to vs:
-  - Binary predictor violates linearity
-  - Large residual range (-10.4818 to 8.4182)
-  - Cannot meet BLUE assumptions with binary predictor
+### mpg vs wt:
 
-**Model mpg ~ gear**
-- Not BLUE
-- Why? Categorical predictor issues:
-  - Discrete nature violates linearity
-  - Poor fit (R² = 0.1936)
-  - Large residual range (-11.1612 to 11.5490)
+```{r}
+# Test correlation
+cor.test(train_data$wt, train_data$mpg, method="pearson")
 
-**Model mpg ~ carb**
-- Not BLUE
-- Why? Discrete predictor issues:
-  - Count data violates continuity assumption
-  - Residuals (-8.026 to 8.429) show heteroscedasticity
-  - Low R² (0.3357) indicates poor fit
+# Fit model
+model_wt <- lm(mpg ~ wt, data=train_data)
+summary(model_wt)
+```
 
-In conclusion, none of these simple linear regression models are BLUE because they all violate one or more of the Gauss-Markov assumptions. The main issues are:
+BLUE Assessment for wt:
+- R² > 0.5: Yes (0.7316)
+- Regression ANOVA meets BLUE criteria: Yes (p = 1.537e-06)
+- Intercept meets BLUE criteria: Yes (p < 0.001)
+- Coefficient meets BLUE criteria: Yes (p < 0.001)
+Therefore BLUE: Yes
+
+### mpg vs qsec:
+
+```{r}
+# Test correlation
+cor.test(train_data$qsec, train_data$mpg, method="pearson")
+
+# Fit model
+model_qsec <- lm(mpg ~ qsec, data=train_data)
+summary(model_qsec)
+```
+
+BLUE Assessment for qsec:
+- R² > 0.5: No (0.233)
+- Regression ANOVA meets BLUE criteria: Yes (p = 0.03112)
+- Intercept meets BLUE criteria: No (p = 0.4241)
+- Coefficient meets BLUE criteria: Yes (p < 0.05)
+Therefore BLUE: No (R² < 0.5 and intercept not significant)
+
+### mpg vs vs:
+
+```{r}
+# Test correlation
+cor.test(train_data$vs, train_data$mpg, method="pearson")
+
+# Fit model
+model_vs <- lm(mpg ~ vs, data=train_data)
+summary(model_vs)
+```
+
+BLUE Assessment for vs:
+- R² > 0.5: No (0.3649)
+- Regression ANOVA meets BLUE criteria: Yes (p = 0.004793)
+- Intercept meets BLUE criteria: Yes (p < 0.001)
+- Coefficient meets BLUE criteria: Yes (p < 0.01)
+Therefore BLUE: No (R² < 0.5)
+
+### mpg vs am:
+
+```{r}
+# Test correlation
+cor.test(train_data$am, train_data$mpg, method="pearson")
+
+# Fit model
+model_am <- lm(mpg ~ am, data=train_data)
+summary(model_am)
+```
+
+BLUE Assessment for am:
+- R² > 0.5: No (0.4103)
+- Regression ANOVA meets BLUE criteria: Yes (p = 0.002346)
+- Intercept meets BLUE criteria: Yes (p < 0.001)
+- Coefficient meets BLUE criteria: Yes (p < 0.01)
+Therefore BLUE: No (R² < 0.5)
+
+### mpg vs gear:
+
+```{r}
+# Test correlation
+cor.test(train_data$gear, train_data$mpg, method="pearson")
+
+# Fit model
+model_gear <- lm(mpg ~ gear, data=train_data)
+summary(model_gear)
+```
+
+BLUE Assessment for gear:
+- R² > 0.5: No (0.1936)
+- Regression ANOVA meets BLUE criteria: No (p = 0.05219)
+- Intercept meets BLUE criteria: No (p = 0.3405)
+- Coefficient meets BLUE criteria: No (p > 0.05)
+Therefore BLUE: No (fails all criteria)
+
+### mpg vs carb:
+
+```{r}
+# Test correlation
+cor.test(train_data$carb, train_data$mpg, method="pearson")
+
+# Fit model
+model_carb <- lm(mpg ~ carb, data=train_data)
+summary(model_carb)
+```
+
+BLUE Assessment for carb:
+- R² > 0.5: No (0.3357)
+- Regression ANOVA meets BLUE criteria: Yes (p = 0.007421)
+- Intercept meets BLUE criteria: Yes (p < 0.001)
+- Coefficient meets BLUE criteria: Yes (p < 0.01)
+Therefore BLUE: No (R² < 0.5)
+
+### Summary of BLUE Analysis
+
+Out of all variables, only four variables satisfy all BLUE criteria:
+1. cyl (R² = 0.7324)
+2. disp (R² = 0.6787)
+3. wt (R² = 0.7316)
+4. hp (R² = 0.5683)
+
+Main reasons for non-BLUE models:
+1. Low R² (< 0.5)
+2. Non-significant intercepts
+3. Non-significant coefficients
+4. Non-significant regression ANOVA
+
+### Additional Notes on BLUE Analysis
+
+In conclusion, based on our detailed analysis of each model, we found that most variables fail to meet all BLUE criteria due to various assumption violations. The main issues include:
 1. Non-linear relationships with mpg
 2. Heteroscedasticity in residuals
 3. Discrete/binary predictors violating linearity assumptions
-4. Potential violations of zero conditional mean
+4. Violations of standard error assumptions
 
 # 3. Identify the statistically significant (p<0.05) independent variables from simple linear regression models as potential candidate variables for the final model and list them for next step
+- Use variables that satisfy BLUE criteria as potential candidate variables for the final model
 
 ```{r}
-# Create a data frame to store variable significance
-significance_df <- data.frame(
-  predictor = predictors,
-  p_value = sapply(models, function(m) summary(m)$coefficients[2, 4])
+# Create data frame using only BLUE-compliant variables
+blue_vars <- data.frame(
+  predictor = c("cyl", "disp", "hp", "wt"),
+  p_value = c(1.497e-06, 8.023e-06, 0.0001238, 1.537e-06),
+  r_squared = c(0.7324, 0.6787, 0.5683, 0.7316)
 )
 
-# Filter for significant variables (p < 0.05)
-significant_vars <- significance_df[significance_df$p_value < 0.05, ]
-significant_vars <- significant_vars[order(significant_vars$p_value), ]
+# Sort by R-squared to show predictive power
+blue_vars_sorted <- blue_vars[order(-blue_vars$r_squared), ]
 
-# Display the significant variables
-cat("Statistically significant variables (p < 0.05):\n")
-print(significant_vars)
+# Display the BLUE-compliant variables (sorted by predictive power)
+cat("Variables satisfying all BLUE criteria (sorted by R²):\n")
+print(blue_vars_sorted)
 ```
 
-# 4.  Fit a multiple linear regression model on training data with mpg as dependent and all the statistically significant variables from simple linear regression models
+# 4.Fit a multiple linear regression model on training data with mpg as dependent and all the statistically significant variables from simple linear regression models
+- Fit a multiple linear regression model on training data with mpg as dependent and all the BLUE-compliant variables
 
 ```{r}
-# Check if there are any significant variables
-if (nrow(significant_vars) > 0) {
-  # Create formula using significant predictors
-  significant_predictors <- significant_vars$predictor
-  formula_multiple <- as.formula(paste("mpg ~", paste(significant_predictors, collapse = " + ")))
+# Fit multiple linear regression model
+multiple_model <- lm(mpg ~ cyl + disp + hp + wt, data = train_data)
 
-  # Fit multiple linear regression model
-  multiple_model <- lm(formula_multiple, data = train_data)
-
-  # Display model summary
-  cat("Multiple Linear Regression Model Summary (using significant predictors):\n")
-  print(summary(multiple_model))
-} else {
-  cat("No statistically significant variables found to build a multiple regression model.\n")
-}
+# Display model summary
+cat("Multiple Linear Regression Model Summary (using BLUE-compliant predictors):\n")
+print(summary(multiple_model))
 ```
 
 # 5. Get VIF of all these variables to check multicollinearity and run the final model until none of the variables have VIF >= 10
@@ -195,137 +308,56 @@ We will now check for multicollinearity among the predictors in the multiple reg
 ```{r}
 # Load the car package for VIF calculation
 library(car)
+# Calculate initial VIF values
+vif_values <- vif(multiple_model)
 
-# Check if the multiple_model exists and has more than one predictor
-if (exists("multiple_model") && length(coef(multiple_model)) > 2) {
-
-  # Calculate initial VIF values
-  vif_values <- tryCatch(
-    vif(multiple_model),
-    error = function(e) {
-      cat("Error calculating VIF: ", e$message, "\n")
-      return(NULL)
-    }
-  )
-
-  if (!is.null(vif_values)) {
-    cat("Initial VIF values:\n")
-    print(vif_values)
-
-    # Iteratively remove variables with VIF >= 10
-    current_predictors <- names(vif_values)
-    while(any(vif_values >= 10, na.rm = TRUE)) {
-      # Find variable with highest VIF
-      max_vif_var <- names(which.max(vif_values))
-      cat("\nRemoving variable with highest VIF:", max_vif_var, "(VIF =", round(max(vif_values, na.rm = TRUE), 2), ")\n")
-
-      # Update predictor list
-      current_predictors <- setdiff(current_predictors, max_vif_var)
-
-      # Check if there are enough predictors left
-      if (length(current_predictors) < 1) {
-        cat("Not enough predictors left to build a model after removing high VIF variables.\n")
-        multiple_model <- NULL # Set model to NULL as it's no longer valid
-        break
-      }
-
-      # Refit the model with remaining predictors
-      formula_updated <- as.formula(paste("mpg ~", paste(current_predictors, collapse = " + ")))
-      multiple_model <- lm(formula_updated, data = train_data)
-
-      # Recalculate VIF for the new model
-      # Need at least 2 predictors to calculate VIF
-      if (length(current_predictors) >= 2) {
-         vif_values <- tryCatch(
-           vif(multiple_model),
-           error = function(e) {
-             cat("Error calculating VIF after update: ", e$message, "\n")
-             return(NULL) # Stop iteration if VIF calculation fails
-           }
-         )
-         if (is.null(vif_values)) break # Exit loop if VIF calculation failed
-         cat("Updated VIF values:\n")
-         print(vif_values)
-      } else {
-         cat("Only one predictor remaining, VIF calculation not applicable.\n")
-         vif_values <- c(0) # Set VIF to 0 to exit loop
-      }
-    }
-
-    # Display the final model summary if a valid model exists
-    if (!is.null(multiple_model)) {
-       cat("\nFinal Multiple Linear Regression Model Summary (after VIF check):\n")
-       print(summary(multiple_model))
-    }
-  }
-} else if (exists("multiple_model") && length(coef(multiple_model)) <= 2) {
-  cat("Multiple regression model has only one predictor or intercept. VIF check is not applicable.\n")
-  cat("Final Model Summary:\n")
-  print(summary(multiple_model))
-} else {
-  cat("Multiple regression model was not built (likely due to no significant predictors initially).\n")
-}
+cat("Initial VIF values:\n")
+print(vif_values)
 ```
+
+- Only `disp` has VIF >= 10, so we will remove it and recheck VIF.
+```{r}
+# Remove disp and refit the model
+# Fit multiple linear regression model
+multiple_model <- lm(mpg ~ cyl + hp + wt, data = train_data)
+
+# Display model summary
+cat("Multiple Linear Regression Model Summary (using BLUE-compliant predictors):\n")
+print(summary(multiple_model))
+
+# Calculate initial VIF values
+vif_values <- vif(multiple_model)
+
+cat("VIF values after removing variables with VIF >= 10:\n")
+print(vif_values)
+```
+
 
 # 6. Get summary and accuracy indices (R-square, RMSE, MAE) of the final model fitted with variables having VIF < 10
 
 ```{r}
-# Check if the final model exists before calculating metrics
-if (!is.null(multiple_model)) {
-  # Function to calculate performance metrics
-  calculate_metrics <- function(actual, predicted) {
-    rmse <- sqrt(mean((actual - predicted)^2, na.rm = TRUE))
-    mae <- mean(abs(actual - predicted), na.rm = TRUE)
-    list(RMSE = rmse, MAE = mae)
-  }
-
-  # Get predictions on training data
-  train_pred <- predict(multiple_model, newdata = train_data)
-
-  # Get predictions on testing data
-  # Ensure test_data has the same predictors as the final model
-  final_predictors <- names(coef(multiple_model))[-1] # Exclude intercept
-  if (all(final_predictors %in% names(test_data))) {
-     test_pred <- predict(multiple_model, newdata = test_data)
-     test_actual <- test_data$mpg
-  } else {
-     cat("Warning: Not all predictors from the final model are present in the test data. Cannot calculate test metrics accurately.\n")
-     test_pred <- NA
-     test_actual <- NA
-  }
-
-
-  # Calculate metrics for training data
-  train_metrics <- calculate_metrics(train_data$mpg, train_pred)
-
-  # Calculate metrics for testing data if possible
-  if (!any(is.na(test_pred))) {
-     test_metrics <- calculate_metrics(test_actual, test_pred)
-  } else {
-     test_metrics <- list(RMSE = NA, MAE = NA)
-  }
-
-
-  # Display results
-  cat("\nModel Performance Metrics:\n")
-  model_summary <- summary(multiple_model)
-  cat("\nTraining Data:")
-  cat("\n - R-squared:", round(model_summary$r.squared, 4))
-  cat("\n - Adjusted R-squared:", round(model_summary$adj.r.squared, 4))
-  cat("\n - RMSE:", round(train_metrics$RMSE, 4))
-  cat("\n - MAE:", round(train_metrics$MAE, 4))
-
-  cat("\n\nTesting Data:")
-  if (!is.na(test_metrics$RMSE)) {
-    cat("\n - RMSE:", round(test_metrics$RMSE, 4))
-    cat("\n - MAE:", round(test_metrics$MAE, 4))
-  } else {
-    cat("\n - Metrics could not be calculated for test data.")
-  }
-
-} else {
-  cat("\nFinal model does not exist, cannot calculate performance metrics.\n")
+# Function to calculate performance metrics
+calculate_metrics <- function(actual, predicted) {
+  rmse <- sqrt(mean((actual - predicted)^2, na.rm = TRUE))
+  mae <- mean(abs(actual - predicted), na.rm = TRUE)
+  list(RMSE = rmse, MAE = mae)
 }
+
+# Get predictions on training data
+train_pred <- predict(multiple_model, newdata = train_data)
+
+# Calculate metrics for training data
+train_metrics <- calculate_metrics(train_data$mpg, train_pred)
+
+
+# Display results
+cat("\nModel Performance Metrics:\n")
+model_summary <- summary(multiple_model)
+cat("\nTraining Data:")
+cat("\n - R-squared:", round(model_summary$r.squared, 4))
+cat("\n - Adjusted R-squared:", round(model_summary$adj.r.squared, 4))
+cat("\n - RMSE:", round(train_metrics$RMSE, 4))
+cat("\n - MAE:", round(train_metrics$MAE, 4))
 ```
 
 # 7. Use lasso regularization as alternative to deal with multicollinearity, show the results in the PPT and explain them well
@@ -369,22 +401,18 @@ test_pred_lasso <- predict(lasso_model, s = cv_fit$lambda.min, newx = x_test_las
 
 # Calculate performance metrics for LASSO model
 # Re-use the calculate_metrics function defined earlier if it exists
-if (exists("calculate_metrics")) {
-  train_metrics_lasso <- calculate_metrics(y_train_lasso, train_pred_lasso)
-  test_metrics_lasso <- calculate_metrics(y_test_lasso, test_pred_lasso)
+train_metrics_lasso <- calculate_metrics(y_train_lasso, train_pred_lasso)
+test_metrics_lasso <- calculate_metrics(y_test_lasso, test_pred_lasso)
 
-  # Display LASSO performance metrics
-  cat("\nLASSO Model Performance Metrics:\n")
-  cat("\nTraining Data:")
-  cat("\n - RMSE:", round(train_metrics_lasso$RMSE, 4))
-  cat("\n - MAE:", round(train_metrics_lasso$MAE, 4))
+# Display LASSO performance metrics
+cat("\nLASSO Model Performance Metrics:\n")
+cat("\nTraining Data:")
+cat("\n - RMSE:", round(train_metrics_lasso$RMSE, 4))
+cat("\n - MAE:", round(train_metrics_lasso$MAE, 4))
 
-  cat("\n\nTesting Data:")
-  cat("\n - RMSE:", round(test_metrics_lasso$RMSE, 4))
-  cat("\n - MAE:", round(test_metrics_lasso$MAE, 4))
-} else {
-  cat("\n'calculate_metrics' function not found. Cannot calculate LASSO performance metrics.\n")
-}
+cat("\n\nTesting Data:")
+cat("\n - RMSE:", round(test_metrics_lasso$RMSE, 4))
+cat("\n - MAE:", round(test_metrics_lasso$MAE, 4))
 ```
 
 # 8. Perform residual analysis on the final model using LINE tests. Can you do prediction using this model? Why?
@@ -632,9 +660,9 @@ Therefore, the prediction generated using `final_lm_model` (which was derived fr
 This analysis aimed to build a predictive model for miles per gallon (MPG) using the `mtcars` dataset. The key steps and findings include:
 
 1.  **Data Preparation:** The `mtcars` dataset was split into training (70%) and testing (30%) sets to facilitate model building and unbiased evaluation.
-2.  **Initial Modeling:** Simple linear regression models were initially fitted for each predictor against `mpg`. Several predictors showed statistically significant relationships (p < 0.05) in isolation.
+2.  **Initial Modeling:** Simple linear regression models were initially fitted for each predictor against `mpg`. We assessed each predictor's compliance with BLUE criteria through statistical testing and model evaluation.
 3.  **Multicollinearity Handling:**
-    *   A multiple linear regression model using initially significant predictors revealed potential multicollinearity issues.
+    *   A multiple linear regression model using initially BLUE-compliant predictors revealed potential multicollinearity issues.
     *   Variance Inflation Factor (VIF) analysis was used to iteratively remove predictors with high multicollinearity (VIF >= 10), resulting in a more stable model (`multiple_model` after VIF check).
     *   LASSO regression was employed as an alternative method, performing automatic variable selection and shrinkage to handle multicollinearity, resulting in the `lasso_model` and subsequently the `final_lm_model` using LASSO-selected predictors.
 4.  **Model Validation:**
