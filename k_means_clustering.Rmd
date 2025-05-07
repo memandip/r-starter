@@ -1,0 +1,128 @@
+---
+title: "K Means Clustering"
+output: html_notebook
+---
+
+## K-means clustering with random data
+```{r}
+set.seed(17)
+
+x <- matrix(rnorm(100), ncol = 2)
+x[1:25,1] <- x[1:25,1] + 3
+x[1:25,2] <- x[1:25,2] - 4
+```
+
+
+```{r}
+km.out <- kmeans(x,2,nstart=20)
+km.out
+```
+
+```{r}
+km.out$cluster
+```
+
+```{r}
+km.out1 <- kmeans(x,3,nstart=20)
+km.out1
+```
+
+```{r}
+km.out$cluster
+```
+
+
+```{r}
+plot(x, col = (km.out$cluster + 1), main = "K-means clustering with 3 clusters", pch = 20, cex = 2)
+```
+
+
+## Kmeans Clustering with "iris" data:
+```{r}
+library(ClusterR)
+library(cluster)
+
+data(iris)
+str(iris)
+
+table(iris$Species)
+
+iris_1 <- iris[, -5]
+```
+
+```{r}
+# Fitting K-Means clustering Model to training dataset
+set.seed(17)
+kmeans.res <- kmeans(iris_1, centers = 3, nstart = 20)
+kmeans.res
+```
+
+### Confusion Matrix
+```{r}
+cm <- table(iris$Species, kmeans.res$cluster)
+cm
+
+(accuracy <- sum(diag(cm))/sum(cm))
+(mce <- 1 - accuracy)
+```
+
+## Visualizing clusters:
+```{r}
+library(cluster)
+y_kmeans <- kmeans.res$cluster
+
+clusplot(iris_1[, c("Sepal.Length", "Sepal.Width")],
+         y_kmeans,
+         lines = 0,
+         main = "Cluster IRIS",
+         xlab = "Sepal length",
+         ylab = "Sepal width",
+         cex = 0.5,
+         shade = TRUE,
+         color = TRUE,
+         plotchar = TRUE,
+         span = TRUE,
+         labels = 2)
+```
+
+## HCA with "single" linkage: USArrests.1 data:
+```{r}
+# Hierarchical clustering with single linkage
+# US Arrests data
+USArrests.1 <- USArrests[, -3]
+state.disimilarity <- dist(USArrests.1)
+hirar.1 <- hclust(state.disimilarity, method = "single")
+plot(hirar.1, ylab = "Distance", labels = rownames(USArrests.1), main = "Cluster Dendogram")
+abline(h = 20, col = "red", lty = 1)
+abline(h = 15, col = "blue", lty = 1)
+hirar.1
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
