@@ -1,0 +1,166 @@
+---
+title: "Decision Tree and Random Forest Models Comparison"
+author: "Roll Number: 17"
+date: "`r Sys.Date()`"
+format: 
+  revealjs:
+    theme: default
+    slide-number: true
+    code-fold: true
+    incremental: true
+    highlight-style: github
+---
+
+## Overview
+
+- Data Generation and Preparation
+- Model Fitting and Evaluation
+- Model Comparison
+- Conclusions
+
+## Data Generation
+
+### Required Packages
+
+```{r setup, message=FALSE}
+# Load required packages
+library(rpart)        # For decision trees
+library(randomForest) # For random forest
+library(caret)        # For model evaluation
+library(ggplot2)      # For visualization
+```
+
+### Data Generation Code
+
+```{r data_generation}
+# Set random seed using roll number
+set.seed(17)
+
+# Generate 4 continuous predictor variables
+x1 <- rnorm(500, mean = 0, sd = 1)
+x2 <- rnorm(500, mean = 2, sd = 2)
+x3 <- rnorm(500, mean = -1, sd = 1.5)
+x4 <- rnorm(500, mean = 1, sd = 1)
+
+# Generate categorical response variable
+y <- ifelse(x1 + x2 + rnorm(500, 0, 0.5) > 2, 1,
+     ifelse(x3 - x4 + rnorm(500, 0, 0.5) < 0, 2, 3))
+y <- factor(y, levels = c(1, 2, 3))
+
+# Create and split data
+data <- data.frame(x1, x2, x3, x4, result = y)
+set.seed(17)
+ind <- sample(2, nrow(data), prob=c(0.7,0.3), replace = T)
+train_data <- data[ind==1, ]
+test_data <- data[ind==2, ]
+```
+
+## Model Fitting
+
+### Decision Tree Model
+
+```{r decision_tree}
+# Fit and plot decision tree
+tree_model <- rpart(result ~ ., data = train_data, method = "class")
+par(mar = c(5.1, 4.1, 6.1, 2.1))
+plot(tree_model, uniform = TRUE, main = "Decision Tree")
+text(tree_model, use.n = TRUE, all = TRUE, cex = 0.8)
+```
+
+#### Interpretation: Decision Tree Plot
+
+- The plot above visualizes the structure of the fitted decision tree.
+- Each node shows a split based on a predictor variable (e.g., x1, x2, x3, x4).
+- The numbers at each node represent the number of observations for each class after the split.
+- The tree helps us understand the sequence of decisions used to classify the data.
+- Shallower splits (closer to the root) indicate more important variables for the initial classification.
+- This plot is useful for model interpretability and understanding how predictions are made.
+
+### Random Forest Model
+
+```{r random_forest}
+# Fit random forest
+rf_model <- randomForest(result ~ ., data = train_data, ntree = 500)
+
+# Plot variable importance
+varImpPlot(rf_model, main = "Variable Importance Plot")
+```
+
+#### Interpretation: Variable Importance Plot
+
+- The plot above shows the importance of each predictor variable in the random forest model.
+- The x-axis (MeanDecreaseGini) measures how much each variable contributes to reducing impurity in the forest.
+- Variables with higher values (e.g., x2) are more important for accurate classification.
+- This plot helps identify which features are most influential in the model's predictions.
+- In this example, x2 is the most important variable, followed by x1, x3, and x4.
+```
+
+## Model Evaluation
+
+### Confusion Matrices
+
+```{r evaluation}
+# Decision Tree predictions
+tree_pred <- predict(tree_model, test_data, type = "class")
+tree_cm <- confusionMatrix(tree_pred, test_data$result)
+
+# Random Forest predictions
+rf_pred <- predict(rf_model, test_data)
+rf_cm <- confusionMatrix(rf_pred, test_data$result)
+
+# Print confusion matrices
+print("Decision Tree Confusion Matrix:")
+print(tree_cm$table)
+print("\nRandom Forest Confusion Matrix:")
+print(rf_cm$table)
+```
+
+## Model Comparison
+
+### Performance Metrics
+
+```{r comparison}
+# Create comparison table
+comparison <- data.frame(
+  Model = c("Decision Tree", "Random Forest"),
+  Accuracy = c(tree_cm$overall["Accuracy"], rf_cm$overall["Accuracy"]),
+  Kappa = c(tree_cm$overall["Kappa"], rf_cm$overall["Kappa"])
+)
+
+# Display comparison
+knitr::kable(comparison, digits = 4)
+```
+
+### Key Findings
+
+- **Accuracy Comparison**:
+  - Decision Tree: 84.56%
+  - Random Forest: 87.25%
+
+- **Kappa Statistics**:
+  - Decision Tree: 0.7010
+  - Random Forest: 0.7574
+
+## Model Selection
+
+### Decision Tree Advantages
+- Simpler, more interpretable model
+- Clear decision rules
+- Lower computational cost
+
+### Random Forest Advantages
+- Higher accuracy (87.25% vs 84.56%)
+- Better Kappa statistic (0.7574 vs 0.7010)
+- More robust predictions
+- Built-in feature importance
+
+## Conclusion
+
+- Random Forest performs better in terms of both accuracy and Kappa statistic
+- The improvement in accuracy (2.69%) and Kappa (0.0564) suggests Random Forest is the better choice
+- Variable importance plot shows which predictors are most influential
+- Consider using Random Forest when prediction accuracy is the primary goal
+
+## Thank You!
+
+Questions? 
