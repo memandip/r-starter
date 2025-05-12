@@ -108,6 +108,37 @@ for(i in 1:4) {
 }
 ```
 
+## BLUE Test Results {.larger}
+
+### Model Assessment Summary
+
+```{r}
+#| echo: false
+library(knitr)
+blue_results <- data.frame(
+  Variable = c("cyl", "wt", "disp", "hp", "drat", "qsec", "vs", "am", "gear", "carb"),
+  R2 = c("Yes (0.73)", "Yes (0.73)", "Yes (0.68)", "Yes (0.57)", "Yes (0.53)", 
+         "No (0.23)", "No (0.36)", "No (0.41)", "No (0.19)", "No (0.34)"),
+  ANOVA = c("Yes (<0.001)", "Yes (<0.001)", "Yes (<0.001)", "Yes (<0.001)", "Yes (<0.001)",
+            "Yes (0.031)", "Yes (0.005)", "Yes (0.002)", "No (0.052)", "Yes (0.007)"),
+  Intercept = c("Yes (<0.001)", "Yes (<0.001)", "Yes (<0.001)", "Yes (<0.001)", "No (0.249)",
+                "No (0.424)", "Yes (<0.001)", "Yes (<0.001)", "No (0.341)", "Yes (<0.001)"),
+  Coefficient = c("Yes (<0.001)", "Yes (<0.001)", "Yes (<0.001)", "Yes (<0.001)", "Yes (<0.001)",
+                  "Yes (0.031)", "Yes (0.005)", "Yes (0.002)", "No (0.052)", "Yes (0.007)"),
+  BLUE = c("Yes", "Yes", "Yes", "Yes", "No", "No", "No", "No", "No", "No")
+)
+
+kable(blue_results, 
+      col.names = c("Variable", "R² > 0.5", "ANOVA sig.", "Intercept sig.", "Coef sig.", "BLUE"),
+      align = c('l', 'c', 'c', 'c', 'c', 'c'),
+      row.names = FALSE)
+```
+
+**BLUE Requirements:**
+- R² > 0.5 indicates good model fit
+- All significance tests must have p < 0.05
+- Model must pass all criteria to be BLUE
+
 **Variable Relationships:**
 
 ```{r}

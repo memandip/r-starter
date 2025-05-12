@@ -390,7 +390,7 @@ cat("Optimal lambda (lambda.1se) based on cross-validation:", cv_fit$lambda.1se,
 # Fit the final LASSO model using the optimal lambda (lambda.min is often preferred)
 lasso_model <- glmnet(x_train_lasso, y_train_lasso, alpha = 1, lambda = cv_fit$lambda.min)
 lasso_model_plot <- train(
-  mpg~ .,
+  mpg~ (cyl + wt + disp + hp),
   data= train_data,
   method="glmnet",
 )

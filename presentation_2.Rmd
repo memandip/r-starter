@@ -1,0 +1,122 @@
+---
+title: "Decision Tree and Random Forest Models"
+author: "Roll Number: 17"
+date: "`r Sys.Date()`"
+output: html_notebook
+---
+
+## Data Generation and Preparation
+
+First, we'll generate synthetic data with 500 observations and 5 variables. One variable will be a categorical factor with levels 1, 2, and 3 as the dependent variable.
+
+```{r setup, message=FALSE}
+# Load required packages
+library(rpart)        # For decision trees
+library(randomForest) # For random forest
+library(caret)        # For model evaluation
+library(ggplot2)      # For visualization
+```
+
+```{r data_generation}
+# Set random seed using roll number
+set.seed(17)
+
+# Generate 4 continuous predictor variables
+x1 <- rnorm(500, mean = 0, sd = 1)  # Normal distribution with mean 0, sd 1
+x2 <- rnorm(500, mean = 2, sd = 2)  # Normal distribution with mean 2, sd 2
+x3 <- rnorm(500, mean = -1, sd = 1.5)  # Normal distribution with mean -1, sd 1.5
+x4 <- rnorm(500, mean = 1, sd = 1)  # Normal distribution with mean 1, sd 1
+
+# Generate categorical response variable (1,2,3)
+y <- factor(sample(1:3, 500, replace = TRUE, prob = c(0.3, 0.3, 0.4)))
+
+# Create data frame
+data <- data.frame(
+  x1 = x1,
+  x2 = x2,
+  x3 = x3,
+  x4 = x4,
+  response = y
+)
+# Split data into training (70%) and testing (30%) sets
+set.seed(17)  # For reproducibility of split
+ind<-sample(2, nrow(data), prob=c(0.7,0.3), replace = T)
+train_data <- data[ind==1, ]
+test_data <- data[ind==2, ]
+```
+
+**Description**: We generated 500 observations with 4 continuous predictor variables (x1, x2, x3, x4) from different normal distributions and 1 categorical response variable with three levels (1, 2, 3). The data was split into training (70%) and testing (30%) sets.
+
+## Decision Tree Model
+
+```{r decision_tree}
+# Fit decision tree model
+tree_model <- rpart(response ~ ., data = train_data, method = "class")
+
+# Plot decision tree
+plot(tree_model, uniform = TRUE, main = "Decision Tree")
+text(tree_model, use.n = TRUE, all = TRUE, cex = 0.8)
+
+# Make predictions on test set
+tree_pred <- predict(tree_model, test_data, type = "class")
+
+# Calculate confusion matrix and accuracy metrics
+tree_cm <- confusionMatrix(tree_pred, test_data$response)
+
+# Print results
+print("Decision Tree Model Results:")
+print(tree_cm)
+```
+
+**Interpretation**: The decision tree model shows how the predictor variables are used to classify the response variable into three categories. The confusion matrix provides insights into model performance, showing how well the model predicted each class. The accuracy metric indicates the overall correctness of predictions.
+
+## Random Forest Model
+
+```{r random_forest}
+# Fit random forest model
+rf_model <- randomForest(response ~ ., data = train_data, ntree = 500)
+
+# Make predictions on test set
+rf_pred <- predict(rf_model, test_data)
+
+# Calculate confusion matrix and accuracy metrics
+rf_cm <- confusionMatrix(rf_pred, test_data$response)
+
+# Print results
+print("Random Forest Model Results:")
+print(rf_cm)
+
+# Plot variable importance
+varImpPlot(rf_model, main = "Variable Importance Plot")
+```
+
+**Interpretation**: The random forest model, being an ensemble method, typically provides more robust predictions than a single decision tree. The variable importance plot shows which predictors are most influential in making predictions. The confusion matrix and accuracy metrics can be compared with the decision tree model to evaluate which performs better.
+
+## Model Comparison and Conclusions
+
+```{r model_comparison}
+# Create comparison table
+comparison <- data.frame(
+  Model = c("Decision Tree", "Random Forest"),
+  Accuracy = c(tree_cm$overall["Accuracy"], rf_cm$overall["Accuracy"]),
+  Kappa = c(tree_cm$overall["Kappa"], rf_cm$overall["Kappa"])
+)
+
+# Print comparison
+print("Model Comparison:")
+print(comparison)
+```
+
+**Interpretation**:
+
+1. **Model Accuracy**: The comparison shows which model achieved higher accuracy on the test set. Random Forest typically performs better due to its ensemble nature.
+
+2. **Model Complexity**: 
+   - Decision Tree: Simpler, more interpretable model with clear decision rules
+   - Random Forest: More complex but typically more accurate, with built-in feature importance
+
+3. **Practical Implications**:
+   - If interpretability is crucial, the decision tree might be preferred
+   - If prediction accuracy is the primary goal, random forest would be the better choice
+
+4. **Variable Importance**: The random forest's variable importance plot helps identify which predictors are most useful for classification, which can guide feature selection in future modeling efforts.
