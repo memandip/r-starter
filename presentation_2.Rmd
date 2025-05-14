@@ -29,7 +29,6 @@ x1 <- rnorm(500, mean = 0, sd = 1)  # Normal distribution with mean 0, sd 1
 x2 <- rnorm(500, mean = 2, sd = 2)  # Normal distribution with mean 2, sd 2
 x3 <- rnorm(500, mean = -1, sd = 1.5)  # Normal distribution with mean -1, sd 1.5
 x4 <- rnorm(500, mean = 1, sd = 1)  # Normal distribution with mean 1, sd 1
-
 # Generate response variable as a function of predictors with little randomness
 # This approach is used to ensure that the response variable is mostly determined by the predictors,
 # making it easier for machine learning models to learn the underlying pattern and achieve higher accuracy.
@@ -113,12 +112,25 @@ varImpPlot(rf_model, main = "Variable Importance Plot")
 # Create comparison table
 comparison <- data.frame(
   Model = c("Decision Tree", "Random Forest"),
-  Accuracy = c(tree_cm$overall["Accuracy"], rf_cm$overall["Accuracy"]),
-  Kappa = c(tree_cm$overall["Kappa"], rf_cm$overall["Kappa"])
+  Accuracy = c(tree_cm$overall["Accuracy"], rf_cm$overall["Accuracy"])
 )
 
 # Print comparison
 print(comparison)
+```
+
+```{r}
+# Extract importance
+importance_df <- as.data.frame(importance(rf_model))
+importance_df$Feature <- rownames(importance_df)
+
+# Plot using ggplot2
+ggplot(importance_df, aes(x = reorder(Feature, MeanDecreaseGini), y = MeanDecreaseGini)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  coord_flip() +
+  xlab("Features") +
+  ylab("Mean Decrease in Gini") +
+  ggtitle("Random Forest Feature Importance")
 ```
 
 **Note**:
