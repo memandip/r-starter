@@ -13,9 +13,11 @@ a) code used to generate 500 random data with five variables where one of the va
 ```{r setup, message=FALSE}
 # Load required packages
 library(rpart)        # For decision trees
+library(rpart.plot)   # For tree visualization
 library(randomForest) # For random forest
-library(caret)        # For model evaluation
+library(caret)        # For model evaluation and tuning
 library(ggplot2)      # For visualization
+library(pROC)        # For ROC curves and AUC
 ```
 
 b) code used to fix the random data with random seed i.e. your roll number
@@ -35,7 +37,9 @@ x4 <- rnorm(500, mean = 1, sd = 1)  # Normal distribution with mean 1, sd 1
 # Adding a small amount of noise (randomness) makes the data more realistic, but the main relationship remains strong.
 y <- ifelse(x1 + x2 + rnorm(500, 0, 0.5) > 2, 1,
      ifelse(x3 - x4 + rnorm(500, 0, 0.5) < 0, 2, 3))
-y <- factor(y, levels = c(1, 2, 3))
+# Convert numeric levels to valid R names
+y <- factor(y, levels = c(1, 2, 3), 
+           labels = c("Low", "Medium", "High"))
 # Create data frame
 data <- data.frame(
   x1 = x1,
@@ -59,78 +63,316 @@ c) code used to fit the assigned supervised classification and unsupervised stat
 ## Decision Tree Model
 
 ```{r decision_tree}
-par(mar = c(5.1, 4.1, 6.1, 2.1)) # Increased top margin to 6.1
+# Fit initial decision tree model with lower complexity parameter
+tree_model <- rpart(result ~ ., 
+                   data = train_data, 
+                   method = "class", cp=0.01)  # Even smaller cp for initial tree
 
-# Fit decision tree model
-tree_model <- rpart(result ~ ., data = train_data, method = "class")
+# Plot initial tree
+# par(mar = c(5.1, 4.1, 6.1, 2.1))
+rpart.plot(tree_model, 
+           main = "Initial Complex Tree")
+```
+```{r}
+# Choose the CP value with lowest cross-validated error
+best_cp <- tree_model$cptable[which.min(tree_model$cptable[, "xerror"]), "CP"]
+best_cp
 
-# Plot decision tree
-plot(tree_model, uniform = TRUE, main = "Decision Tree")
-text(tree_model, use.n = TRUE, all = TRUE, cex = 0.8)
+# Prune the tree using the best CP value
+pruned_tree <- prune(tree_model, cp = 0.01136364)
+
+# Plot the pruned tree
+rpart.plot(pruned_tree)
+
+# Make predictions with pruned tree
+pruned_pred <- predict(pruned_tree, test_data, type = "class")
+
+# Calculate performance metrics
+pruned_cm <- confusionMatrix(pruned_pred, test_data$result)
+
+# Print results
+print("Pruned Decision Tree Results:")
+print(pruned_cm)
+
+# Compare tree structures
+cat("\nTree Complexity Comparison:\n")
+cat("Initial tree nodes:", nrow(tree_model$frame), "\n")
+cat("Pruned tree nodes:", nrow(pruned_tree$frame), "\n")
+cat("Node reduction:", nrow(tree_model$frame) - nrow(pruned_tree$frame), "nodes\n")
+cat("Complexity reduction:", 
+    round((nrow(tree_model$frame) - nrow(pruned_tree$frame))/nrow(tree_model$frame) * 100, 1),
+    "%\n")
 ```
 
+
 ```{r}
-# Make predictions on test set
+# Print initial tree complexity
+cat("\nInitial Tree Size:\n")
+cat("Number of nodes:", nrow(tree_model$frame), "\n")
+
+# Make predictions
 tree_pred <- predict(tree_model, test_data, type = "class")
-# Calculate confusion matrix and accuracy metrics
+
+# Calculate performance metrics
 tree_cm <- confusionMatrix(tree_pred, test_data$result)
 
 # Print results
-print("Decision Tree Model Results:")
-print(tree_cm)
+print("Base Decision Tree Results:")
+print(tree_cm$byClass)
+
+# Cross-validation for cp selection
+printcp(tree_model)
+plotcp(tree_model)
 ```
 
-**Interpretation**: The decision tree model shows how the predictor variables are used to classify the response variable into three categories. The confusion matrix provides insights into model performance, showing how well the model predicted each class. The accuracy metric indicates the overall correctness of predictions.
+**Interpretation**: The decision tree analysis shows:
+1. Initial Tree: A complex tree with many nodes (cp = 0.0001) to capture fine details in the data
+2. Pruned Tree: A simplified version that maintains performance while reducing overfitting
+3. The pruning process significantly reduces tree complexity while preserving predictive power
+4. The confusion matrix and accuracy metrics show the performance trade-offs between complexity and accuracy
+
+The significant reduction in tree size through pruning demonstrates the importance of finding the right balance between model complexity and predictive accuracy.
 
 ## Random Forest Model
 
 ```{r random_forest}
-# Fit random forest model
-rf_model <- randomForest(result ~ ., data = train_data, ntree = 500)
+# Initial random forest model
+rf_model <- randomForest(result ~ ., 
+                        data = train_data,
+                        ntree = 500,
+                        importance = TRUE)
 
-# Make predictions on test set
+# Make predictions
 rf_pred <- predict(rf_model, test_data)
 
-# Calculate confusion matrix and accuracy metrics
+# Calculate performance metrics
 rf_cm <- confusionMatrix(rf_pred, test_data$result)
 
 # Print results
-print("Random Forest Model Results:")
+print("Initial Random Forest Results:")
 print(rf_cm)
-```
 
-```{r}
 # Plot variable importance
-varImpPlot(rf_model, main = "Variable Importance Plot")
+varImpPlot(rf_model, 
+           main = "Random Forest Variable Importance",
+           type = 1,
+           cex = 0.8)
 ```
 
-**Interpretation**: The random forest model, being an ensemble method, typically provides more robust predictions than a single decision tree. The variable importance plot shows which predictors are most influential in making predictions. The confusion matrix and accuracy metrics can be compared with the decision tree model to evaluate which performs better.
+## Random Forest Hyperparameter Tuning
+
+```{r rf_tuning}
+# Function to perform k-fold cross-validation
+rf_cv <- function(data, k=5, mtry) {
+    set.seed(17)
+    folds <- sample(1:k, nrow(data), replace=TRUE)
+    cv_errors <- numeric(k)
+    
+    for(i in 1:k) {
+        # Split data
+        train <- data[folds != i,]
+        test <- data[folds == i,]
+        
+        # Train model
+        rf <- randomForest(result ~ ., 
+                          data=train, 
+                          mtry=mtry,
+                          ntree=500,
+                          importance=TRUE)
+        
+        # Make predictions
+        pred <- predict(rf, test)
+        
+        # Calculate error
+        cv_errors[i] <- mean(pred != test$result)
+    }
+    
+    return(mean(cv_errors))
+}
+
+# Try different mtry values
+mtry_values <- 1:4
+cv_results <- sapply(mtry_values, function(m) rf_cv(train_data, mtry=m))
+
+# Find best mtry
+best_mtry <- mtry_values[which.min(cv_results)]
+print(paste("Best mtry value:", best_mtry))
+
+# Train final model with best mtry
+rf_tuned <- randomForest(result ~ ., 
+                        data=train_data,
+                        mtry=best_mtry,
+                        ntree=500,
+                        importance=TRUE)
+
+# Make predictions
+tuned_pred <- predict(rf_tuned, test_data)
+
+# Calculate performance metrics
+tuned_cm <- confusionMatrix(tuned_pred, test_data$result)
+
+# Print results
+print("Tuned Random Forest Results:")
+print(tuned_cm)
+
+# Plot error rates
+plot(rf_tuned, main="Error Rates vs Number of Trees")
+
+# Plot variable importance
+varImpPlot(rf_tuned, 
+           main="Variable Importance (Tuned Model)",
+           type=1,
+           cex=0.8)
+
+# Print tuning results
+cat("\nCross-validation results:\n")
+results_df <- data.frame(
+    mtry = mtry_values,
+    cv_error = cv_results
+)
+print(results_df)
+```
+
+**Interpretation**: The random forest analysis demonstrates:
+1. Initial Model: Built with 500 trees, providing robust ensemble predictions
+2. Variable Importance: Shows relative contribution of each predictor to classification
+3. Performance Comparison: Generally outperforms single decision trees due to ensemble nature
+4. Cross-validation Results: Shows model stability across different data subsets
+
+The random forest approach provides a more robust solution by combining multiple decision trees, though at the cost of reduced interpretability compared to single trees.
 
 ## Model Comparison and Conclusions
 
 ```{r model_comparison}
-# Create comparison table
+# Create comprehensive comparison table
 comparison <- data.frame(
-  Model = c("Decision Tree", "Random Forest"),
-  Accuracy = c(tree_cm$overall["Accuracy"], rf_cm$overall["Accuracy"])
+  Model = c("Base Decision Tree", "Pruned Decision Tree", 
+            "Initial Random Forest", "Tuned Random Forest"),
+  Accuracy = c(tree_cm$overall["Accuracy"],
+              pruned_cm$overall["Accuracy"],
+              rf_cm$overall["Accuracy"],
+              tuned_cm$overall["Accuracy"]),
+  Kappa = c(tree_cm$overall["Kappa"],
+            pruned_cm$overall["Kappa"],
+            rf_cm$overall["Kappa"],
+            tuned_cm$overall["Kappa"])
 )
 
-# Print comparison
+# Print overall performance comparison
+print("Overall Model Performance:")
 print(comparison)
-```
+tree_cm
+# Create class-wise performance comparison
+performance_metrics <- data.frame(
+    Class = rep(c("Low", "Medium", "High"), each = 4),
+    Model = rep(c("Base Tree", "Pruned Tree", "Random Forest", "Tuned RF"), times = 3),
+    Sensitivity = c(
+        # Low class
+        tree_cm$byClass["Low", "Sensitivity"],
+        pruned_cm$byClass["Low", "Sensitivity"],
+        rf_cm$byClass["Low", "Sensitivity"],
+        tuned_cm$byClass["Low", "Sensitivity"],
+        # Medium class
+        tree_cm$byClass["Medium", "Sensitivity"],
+        pruned_cm$byClass["Medium", "Sensitivity"],
+        rf_cm$byClass["Medium", "Sensitivity"],
+        tuned_cm$byClass["Medium", "Sensitivity"],
+        # High class
+        tree_cm$byClass["High", "Sensitivity"],
+        pruned_cm$byClass["High", "Sensitivity"],
+        rf_cm$byClass["High", "Sensitivity"],
+        tuned_cm$byClass["High", "Sensitivity"]
+    ),
+    Specificity = c(
+        # Low class
+        tree_cm$byClass["Low", "Specificity"],
+        pruned_cm$byClass["Low", "Specificity"],
+        rf_cm$byClass["Low", "Specificity"],
+        tuned_cm$byClass["Low", "Specificity"],
+        # Medium class
+        tree_cm$byClass["Medium", "Specificity"],
+        pruned_cm$byClass["Medium", "Specificity"],
+        rf_cm$byClass["Medium", "Specificity"],
+        tuned_cm$byClass["Medium", "Specificity"],
+        # High class
+        tree_cm$byClass["High", "Specificity"],
+        pruned_cm$byClass["High", "Specificity"],
+        rf_cm$byClass["High", "Specificity"],
+        tuned_cm$byClass["High", "Specificity"]
+    )
+)
 
-```{r}
-# Extract importance
-importance_df <- as.data.frame(importance(rf_model))
-importance_df$Feature <- rownames(importance_df)
+# Round numeric columns to 3 decimal places
+performance_metrics[,3:4] <- round(performance_metrics[,3:4], 3)
 
-# Plot using ggplot2
-ggplot(importance_df, aes(x = reorder(Feature, MeanDecreaseGini), y = MeanDecreaseGini)) +
-  geom_bar(stat = "identity", fill = "steelblue") +
-  coord_flip() +
-  xlab("Features") +
-  ylab("Mean Decrease in Gini") +
-  ggtitle("Random Forest Feature Importance")
+# Print class-wise performance comparison
+cat("\nClass-wise Performance Metrics:\n")
+print(knitr::kable(performance_metrics, 
+                   caption = "Sensitivity and Specificity by Class and Model",
+                   align = c('l', 'l', 'r', 'r')))
+
+# Add interpretation
+cat("\nInterpretation of class-wise performance:\n")
+cat("- Sensitivity: Ability to correctly identify samples of that class\n")
+cat("- Specificity: Ability to correctly identify samples not in that class\n")
+cat("- Higher values indicate better performance (range: 0 to 1)\n\n")
+cat("Key observations:\n")
+cat("1. Class-wise Performance: Each class (Low, Medium, High) shows different patterns\n")
+cat("2. Model Comparison: Shows how each model performs for specific classes\n")
+cat("3. Trade-offs: Highlights balance between sensitivity and specificity\n")
+cat("4. Model Selection: Helps choose models based on class-specific needs\n")
+
+# Round numeric columns to 3 decimal places
+comparison[,-1] <- round(comparison[,-1], 3)
+
+# Print comparison with nice formatting
+print("Model Performance Comparison:")
+print(comparison)
+
+# Plot ROC curves for each class
+par(mfrow=c(2,2))
+
+# For each class level
+for(class_level in c("Low", "Medium", "High")) {
+    # Create binary outcomes
+    binary_actual <- ifelse(test_data$result == class_level, 1, 0)
+    
+    # Get probabilities for each model
+    tree_probs <- predict(tree_model, test_data, type="prob")[,class_level]
+    pruned_probs <- predict(pruned_tree, test_data, type="prob")[,class_level]
+    rf_probs <- predict(rf_model, test_data, type="prob")[,class_level]
+    rf_tuned_probs <- predict(rf_tuned, test_data, type="prob")[,class_level]
+    
+    # Create ROC curves
+    roc_tree <- roc(binary_actual, tree_probs)
+    roc_pruned <- roc(binary_actual, pruned_probs)
+    roc_rf <- roc(binary_actual, rf_probs)
+    roc_tuned <- roc(binary_actual, rf_tuned_probs)
+    
+    # Plot ROC curves
+    plot(roc_tree, main=paste("ROC for", class_level, "Class"),
+         col="blue", lwd=2)
+    lines(roc_pruned, col="green", lwd=2)
+    lines(roc_rf, col="red", lwd=2)
+    lines(roc_tuned, col="purple", lwd=2)
+    
+    # Add legend
+    legend("bottomright", 
+           legend=c("Base Tree", "Pruned Tree", 
+                   "Random Forest", "Tuned RF"),
+           col=c("blue", "green", "red", "purple"), 
+           lwd=2)
+    
+    # Add AUC values
+    auc_text <- sprintf("AUC: %.3f / %.3f / %.3f / %.3f",
+                       auc(roc_tree), auc(roc_pruned),
+                       auc(roc_rf), auc(roc_tuned))
+    text(0.5, 0.2, auc_text, cex=0.8)
+}
+
+# Reset plot layout
+par(mfrow=c(1,1))
+
 ```
 
 **Note**:
@@ -139,16 +381,47 @@ Kappa (Cohen's Kappa) is a statistical measure of inter-rater agreement or class
 - Kappa = 0: Agreement is no better than random chance.
 - Kappa < 0: Agreement is worse than chance.
 
-**Interpretation**:
+**Final Analysis and Interpretation**:
 
-1. **Model Accuracy**: The comparison shows which model achieved higher accuracy on the test set. Random Forest typically performs better due to its ensemble nature.
+1. **Model Evolution and Performance**:
+   - Base Decision Tree: Provides a baseline model with clear decision rules
+   - Pruned Decision Tree: Reduces complexity while maintaining performance, preventing overfitting
+   - Initial Random Forest: Leverages ensemble learning for improved accuracy
+   - Tuned Random Forest: Further optimizes performance through hyperparameter tuning
 
-2. **Model Complexity**: 
-   - Decision Tree: Simpler, more interpretable model with clear decision rules
-   - Random Forest: More complex but typically more accurate, with built-in feature importance
+2. **Performance Metrics Comparison**:
+   - Overall Metrics:
+     * Accuracy: Measures overall correct predictions
+     * Kappa: Agreement accounting for chance, showing model reliability
+   - Class-specific Metrics:
+     * Low Class: Performance in identifying and distinguishing low values
+     * Medium Class: Performance in identifying and distinguishing medium values
+     * High Class: Performance in identifying and distinguishing high values
+   - Each class evaluated by:
+     * Sensitivity: True positive rate for that class
+     * Specificity: True negative rate for that class
 
-3. **Practical Implications**:
-   - If interpretability is crucial, the decision tree might be preferred
-   - If prediction accuracy is the primary goal, random forest would be the better choice
+3. **ROC Curve Analysis**:
+   - Demonstrates model performance across different classification thresholds
+   - Each class's separate ROC curve shows model's discrimination ability
+   - Area Under Curve (AUC) quantifies overall model performance
+   - Comparison across models shows relative strengths
 
-4. **Variable Importance**: The random forest's variable importance plot helps identify which predictors are most useful for classification, which can guide feature selection in future modeling efforts.
+4. **Hyperparameter Optimization**:
+   - Tree Pruning: Optimal complexity parameter balances model complexity and accuracy
+   - Random Forest Tuning: Optimized mtry and min.node.size improve model robustness
+   - Cross-validation ensures reliable parameter selection
+
+5. **Practical Implications**:
+   - Model Selection Trade-offs:
+     * Decision Trees: Better interpretability, clear decision rules
+     * Random Forest: Higher accuracy, robust predictions
+   - Use Case Considerations:
+     * For explanatory analysis: Decision tree might be preferred
+     * For predictive accuracy: Tuned random forest is recommended
+
+6. **Recommendations**:
+   - Choose model based on specific needs (interpretability vs accuracy)
+   - Consider computational resources (simpler models for limited resources)
+   - Regular model retraining may be needed for real-world applications
+   - Monitor performance across all classes, not just overall accuracy

@@ -1,0 +1,447 @@
+---
+title: "Linear Regression"
+author: "Bishal Khand Thakuri"
+date: "2025-05-05"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Supervised Learning::
+
+
+
+
+##  Divide "mtcars" dataset as training data (70% random cases) and testing data (30% random cases) using "sample" in r
+
+
+
+```{r}
+car<-as.data.frame(mtcars)
+
+set.seed(9)
+
+ind<-sample(2, nrow(car), prob=c(0.7,0.3), replace = T)
+
+train<-car[ind==1,]
+
+test<-car[ind==2,]
+```
+
+
+## Fit simple linear regression models on training data with mpg as dependent and all other variables as independent variables one by one i.e. separately. Are these models BLUE? Why?
+
+```{r}
+str(mtcars)
+```
+
+
+```{r}
+shapiro.test(train$mpg)
+```
+
+Confirms dependent variable follows normal distribution, pvalue >0.05
+
+### mpg vs cyl:
+
+```{r}
+cor.test(x=train$cyl, y=train$mpg, method="pearson")
+```
+
+confirms linearity, p value<0.05 and high degree of negative correlationship cor = -0.872
+
+```{r}
+lm1<-lm(mpg~cyl, data=train)
+summary(lm1)
+```
+
+cyl variable explains 75% variance in mpg variable
+
+y = a + bx
+
+F-statistics is regression anova.. explains linear and shows how good beta coefficient is: regression anova should be significant....
+if pvalue>0.05 then beta coefficient is not good so regression anova explains that linear coefficient is not good.
+
+p-values shows if the result significant.. p<0.05 means significant.
+
+BLUE : Best Linear Unbiased Estimation:: T
+- check R2>0.5, T
+- regression anova be significant. T
+- "a" and "b" be significant. T
+
+
+### mpg vs disp:
+
+
+```{r}
+lm2<-lm(mpg~disp, data=train)
+
+summary(lm2)
+```
+
+BLUE : Best Linear Unbiased Estimation:: T
+- check R2>0.5, T
+- regression anova be significant. T
+- "a"(intercept) and "b"(coeff) be significant. T
+- p<0.05 means significant.
+
+
+### mpg vs hp:
+
+
+```{r}
+lm3<-lm(mpg~hp, data=train)
+
+summary(lm3)
+```
+
+BLUE : Best Linear Unbiased Estimation:: T
+- check R2>0.5, T
+- regression anova be significant. T
+- "a"(intercept) and "b"(coeff) be significant. T
+- p<0.05 means significant.
+
+
+
+### mpg vs drat:
+
+```{r}
+lm4<-lm(mpg~drat, data=train)
+
+summary(lm4)
+```
+
+BLUE : Best Linear Unbiased Estimation:: F
+- check R2>0.5, T
+- regression anova be significant. T
+- "a"(intercept)  be significant F
+- "b"(coeff) be significant. T
+- p<0.05 means significant.
+
+
+### mpg vs wt:
+
+```{r}
+lm5<-lm(mpg~wt, data=train)
+
+summary(lm5)
+```
+
+BLUE : Best Linear Unbiased Estimation:: T
+- check R2>0.5, T
+- regression anova be significant. T
+- "a"(intercept)  be significant T
+- "b"(coeff) be significant. T
+- p<0.05 means significant.
+
+
+
+### mpg vs qsec:
+
+```{r}
+lm6<-lm(mpg~qsec, data=train)
+
+summary(lm6)
+```
+
+BLUE : Best Linear Unbiased Estimation:: F
+- check R2>0.5, F
+- regression anova be significant. F
+- "a"(intercept)  be significant F
+- "b"(coeff) be significant. F
+- p<0.05 means significant.
+
+
+### mpg vs vs:
+
+```{r}
+lm7<-lm(mpg~vs, data=train)
+
+summary(lm7)
+```
+
+BLUE : Best Linear Unbiased Estimation:: F
+- check R2>0.5, F
+- regression anova be significant. T
+- "a"(intercept)  be significant T
+- "b"(coeff) be significant. T
+- p<0.05 means significant.
+
+
+### mpg vs am:
+
+```{r}
+lm8<-lm(mpg~am, data=train)
+
+summary(lm8)
+```
+
+BLUE : Best Linear Unbiased Estimation:: F
+- check R2>0.5, F
+- regression anova be significant. T
+- "a"(intercept)  be significant T
+- "b"(coeff) be significant. T
+- p<0.05 means significant.
+
+### mpg vs gear:
+
+```{r}
+lm9<-lm(mpg~gear, data=train)
+
+summary(lm9)
+```
+
+BLUE : Best Linear Unbiased Estimation:: F
+- check R2>0.5, F
+- regression anova be significant. T
+- "a"(intercept)  be significant F
+- "b"(coeff) be significant. T
+- p<0.05 means significant.
+
+
+
+### mpg vs carb:
+
+```{r}
+lm9<-lm(mpg~carb, data=train)
+
+summary(lm9)
+```
+
+BLUE : Best Linear Unbiased Estimation:: F
+- check R2>0.5, F
+- regression anova be significant. T
+- "a"(intercept)  be significant T
+- "b"(coeff) be significant. T
+- p<0.05 means significant.
+
+
+
+## Identify the statistically significant (p<0.05) independent variables from simple linear regression models as potential candidate variables for the final model and list them for next step
+
+- cyl
+- disp
+- wt
+- hp
+
+## Fit a multiple linear regression model on training data with mpg as dependent and all the statistically significant variables from simple linear regression models
+
+
+```{r}
+mlr<-lm(mpg~cyl+disp+wt+hp, data=train)
+
+summary(mlr)
+```
+
+
+
+Here, disp and hp has less significance.. ,maybe cyl , hp and disp represent same property of car so two highly correlated may have been used here. we check their correlation.:
+
+```{r}
+cor.test(x=train$cyl, y=train$disp, method="pearson")
+```
+```{r}
+cor.test(x=train$cyl, y=train$hp, method="pearson")
+```
+
+Yea they are highlr correlated. engine displacement is dependent upon the number of cylinders od engine, same with horse power as well as it increases with cylinder number and engine size
+
+
+
+## Get VIF of all these variables to check multicollinearity and run the final model until none of the variables have VIF >= 10
+
+```{r}
+library(car)
+
+vif(mlr)
+```
+
+disp has the vif >=10 so we remove disp:
+
+```{r}
+mlr1<-lm(mpg~cyl+wt+hp, data=train)
+
+summary(mlr1)
+
+vif(mlr1)
+```
+
+all these variables has vif <10 but hp coefficient is not significant (p>0.05) so we remove hp
+
+```{r}
+mlr2<-lm(mpg~cyl+wt, data=train)
+
+summary(mlr2)
+
+vif(mlr2)
+```
+
+
+
+
+## Get summary and accuracy indices (R-square, RMSE, MAE) of the final model fitted with variables having VIF < 10
+
+
+```{r}
+library(caret)
+
+rmse<-RMSE(predict(mlr2), train$mpg)
+rmse
+```
+
+```{r}
+mse<-rmse^2
+mse
+```
+
+```{r}
+(mae<-MAE(predict(mlr2), train$mpg))
+```
+
+## Use lasso regularization as alternative to deal with multicollinearity, show the results in the PPT and explain them well 
+
+
+
+
+
+
+
+## Perform residual analysis on the final model using LINE tests. Can you do prediction using this model? Why?
+
+
+LINE test: Linearity of Residuals, Independence of Residual, Normality and Equal Variance of Residual
+
+### Linear:
+
+Graphical::
+
+```{r}
+plot(mlr2, which=1, col="blue")
+```
+
+Calculation
+
+```{r}
+summary(mlr2$residuals)
+```
+
+mean of Residuals = 0; is normal..
+
+
+### Independence:
+
+autocorrelation
+
+```{r}
+acf(mlr2$residuals)
+```
+
+Durbin-Watson Test
+
+
+```{r}
+library(car)
+
+durbinWatsonTest(mlr2)
+
+```
+
+p(0.83)>0.05 so it is independent
+
+
+### Normality Test:
+
+qqplot
+
+```{r}
+plot(mlr2, which=2, col="blue")
+```
+
+shapirowilk test.. > 0.0.5 means follow normal
+
+```{r}
+shapiro.test(mlr2$residuals)
+```
+is normal,. pvalue(0.08)>0.05
+
+
+### Equal Variance Test, Homoescadasticity Test: MOST IMPORTANT TEST
+
+Graphical::
+standardize residuals and standardize predicted values
+
+- random means equal variance else if pattern then nonequal variance
+
+```{r}
+plot(mlr2, which=3, col="blue")
+```
+
+Breusch_pagart test:
+
+
+```{r}
+library(lmtest)
+
+bptest(mlr2)
+
+```
+p-value > 0.05 hence it has equal variance.
+
+hence LINE test for residuals is also satisfied here.
+
+## Predict the mpg on testing data, get accuracy indices (R-square, RMSE, MAE) of prediction and interpret them carefully 
+
+```{r}
+rmse1<-RMSE(predict(mlr2, test), test$mpg)
+rmse1
+```
+
+```{r}
+mse1<-rmse1^2
+mse1
+```
+
+```{r}
+(mae1<-MAE(predict(mlr2, test), test$mpg))
+
+```
+```{r}
+test.pred<-predict(mlr2, test)
+(mpe<-mean(abs(test$mpg-test.pred)/test$mpg)*100)
+```
+
+
+
+##  Prediction: How much mpg is given by a car with 6000 lbs weight based on training and testing data? Which is correct?
+
+```{r}
+p<-as.data.frame(x=cbind(6,8))
+
+colnames(p)<-c("wt","cyl")
+```
+
+
+```{r}
+predict(mlr2, newdata=p)
+```
+
+
+
+##  Write a summary based on the results obtained above and include recommendations using data science approach.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

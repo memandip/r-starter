@@ -2,13 +2,7 @@
 title: "Decision Tree and Random Forest Models Comparison"
 author: "Roll Number: 17"
 date: "`r Sys.Date()`"
-format: 
-  revealjs:
-    theme: default
-    slide-number: true
-    code-fold: true
-    incremental: true
-    highlight-style: github
+format: pptx
 ---
 
 ## Overview
@@ -45,7 +39,7 @@ x4 <- rnorm(500, mean = 1, sd = 1)
 # Generate categorical response variable
 y <- ifelse(x1 + x2 + rnorm(500, 0, 0.5) > 2, 1,
      ifelse(x3 - x4 + rnorm(500, 0, 0.5) < 0, 2, 3))
-y <- factor(y, levels = c(1, 2, 3))
+y <- as.factor(y)
 
 # Create and split data
 data <- data.frame(x1, x2, x3, x4, result = y)

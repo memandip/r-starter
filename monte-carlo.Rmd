@@ -1,0 +1,118 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Admission to UCLA dataset
+
+```{r}
+setwd("~/Desktop/projects/r-starter/")
+
+data <- read.csv("data/binary.csv")
+
+str(data)
+```
+
+```{r}
+total_data_admitted <- data[data$admit == 1, ]
+total_data_not_admitted <- data[data$admit == 0, ]
+
+percent_admitted <- nrow(total_data_admitted) / nrow(data)
+
+print(percent_admitted)
+
+table(data$admit)
+```
+
+```{r}
+# data$admit <- as.factor(data$admit)
+data$admit <- factor(data$admit, levels = c("0", "1"))
+```
+
+```{r}
+prop.table(table(data$admit))
+```
+
+
+## Predict without correcting imbalance
+```{r}
+# Data partition
+set.seed(17)
+
+ind <- sample(2, nrow(data), replace = TRUE, prob = c(0.7, 0.3))
+
+train <- data[ind==1,]
+test <- data[ind==2,]
+```
+
+## Check the class imbalance in training data
+```{r}
+table(train$admit)
+
+prop.table(table(train$admit))
+```
+
+## Prediction Model
+## Random forest model
+```{r}
+library(randomForest)
+rfm.train <- randomForest(admit ~ ., data = train)
+```
+
+
+## Model evaluation withn test data using caret package
+```{r}
+library(caret)
+
+confusionMatrix(predict(rfm.train, test), test$admit, positive = '1')
+```
+
+## Simpson's Paradox (For statisticians)
+- Find out for data science
+
+## Penalize logistic regression
+- Firth logistic regression
+
+# Bais, variance tradeoffs handling
+
+Question:
+- Why do we use Adjusted R-squared in multiple Linear Regression?
+
+- Variance Inflation Factor (VIF) is used to check for multicollinearity in multiple linear regression. Multicollinearity occurs when two or more independent variables are highly correlated, which can lead to unreliable estimates of the coefficients.
+- VIF is controlled using Lasso Regularization.
+
+
+
+- dplyer random sample generation function
+```{r}
+?rnorm
+?replicate
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
