@@ -13,6 +13,7 @@ a) code used to generate 500 random data with five variables where one of the va
 ```{r setup, message=FALSE}
 # Load required packages
 library(rpart)        # For decision trees
+library(rpart.plot)
 library(randomForest) # For random forest
 library(caret)        # For model evaluation
 library(ggplot2)      # For visualization
@@ -35,7 +36,7 @@ x4 <- rnorm(500, mean = 1, sd = 1)  # Normal distribution with mean 1, sd 1
 # Adding a small amount of noise (randomness) makes the data more realistic, but the main relationship remains strong.
 y <- ifelse(x1 + x2 + rnorm(500, 0, 0.5) > 2, 1,
      ifelse(x3 - x4 + rnorm(500, 0, 0.5) < 0, 2, 3))
-y <- factor(y, levels = c(1, 2, 3))
+y <- factor(y, labels = c("Low", "Medium", "High"))
 # Create data frame
 data <- data.frame(
   x1 = x1,
@@ -65,22 +66,42 @@ par(mar = c(5.1, 4.1, 6.1, 2.1)) # Increased top margin to 6.1
 tree_model <- rpart(result ~ ., data = train_data, method = "class")
 
 # Plot decision tree
-plot(tree_model, uniform = TRUE, main = "Decision Tree")
+rpart.plot(tree_model, uniform = TRUE, main = "Decision Tree")
 text(tree_model, use.n = TRUE, all = TRUE, cex = 0.8)
 ```
 
+## Pruning Tree
 ```{r}
-# Make predictions on test set
-tree_pred <- predict(tree_model, test_data, type = "class")
-# Calculate confusion matrix and accuracy metrics
-tree_cm <- confusionMatrix(tree_pred, test_data$result)
+# Find optimal cp using cross-validation
+printcp(tree_model)
+optimal_cp <- tree_model$cptable[which.min(tree_model$cptable[,"xerror"]), "CP"]
 
-# Print results
-print("Decision Tree Model Results:")
-print(tree_cm)
+# Prune the tree using optimal cp
+pruned_tree <- prune(tree_model, cp = optimal_cp)
+
+# Plot the pruned tree
+rpart.plot(pruned_tree, main = "Pruned Decision Tree")
 ```
 
-**Interpretation**: The decision tree model shows how the predictor variables are used to classify the response variable into three categories. The confusion matrix provides insights into model performance, showing how well the model predicted each class. The accuracy metric indicates the overall correctness of predictions.
+
+```{r}
+# Make predictions on test set using pruned tree
+pruned_pred <- predict(pruned_tree, test_data, type = "class")
+# Calculate confusion matrix and accuracy metrics for pruned tree
+pruned_cm <- confusionMatrix(pruned_pred, test_data$result)
+
+# Print results
+print("Pruned Decision Tree Results:")
+print(pruned_cm)
+
+# Compare accuracy with original tree
+tree_pred <- predict(tree_model, test_data, type = "class")
+tree_cm <- confusionMatrix(tree_pred, test_data$result)
+cat("Original Decision Tree Accuracy:", tree_cm$overall["Accuracy"], "\n")
+cat("Pruned Decision Tree Accuracy:", pruned_cm$overall["Accuracy"], "\n")
+```
+
+**Interpretation**: The pruned decision tree reduces model complexity by removing less important splits, which can help prevent overfitting. The confusion matrix and accuracy for the pruned tree allow comparison with the original tree. Pruning may improve generalization, but sometimes can slightly reduce accuracy if the tree is underfit.
 
 ## Random Forest Model
 

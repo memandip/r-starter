@@ -1,0 +1,112 @@
+---
+title: "Market Basket Analysis"
+output: html_notebook
+---
+
+```{r}
+# Create a list of baskets
+market_basket <- list(
+  c("bread", "milk"),
+  c("bread", "diapers", "beer", "eggs"),
+  c("milk", "diapers", "beer", "cola"),
+  c("bread", "milk", "diapers", "beer"),
+  c("bread", "milk", "diapers", "cola")
+)
+
+# set transaction names (T1 to T5)
+names(market_basket) <- paste("T", 1:length(market_basket), sep = "")
+```
+
+## "arules" package and get some outputs
+```{r}
+library(arules)
+# Transformation
+trans <- as(market_basket, "transactions")
+
+# Dimensions
+dim(trans)
+
+# Item Labels
+itemLabels(trans)
+
+# Summary
+summary(trans)
+
+# Plot
+image(trans)
+```
+
+
+```{r}
+inspect(trans)
+```
+
+## Apriori algorithm in "trans" with minimum support of 0.3 and min. confidence of 0.5
+
+```{r}
+rules <- apriori(
+  trans,
+  parameter = list(supp=0.3,
+                   conf=0.5,
+                   maxlen=10,
+                   target="rules")
+)
+```
+```{r}
+summary(rules)
+```
+```{r}
+inspect(rules)
+```
+
+```{r}
+rules <- apriori(
+  trans,
+  parameter = list(supp=0.3,
+                   conf=0.5,
+                   minlen=2,
+                   maxlen=10,
+                   target="rules")
+)
+```
+```{r}
+inspect(rules)
+```
+
+```{r}
+plot(rules, engine="plotly")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
