@@ -1,0 +1,110 @@
+---
+title: "Question 10"
+author: "Raju Bhujel (22)"
+output:
+  pdf_document: default
+---
+
+10. Use the four variables of "USArrests" data file into R Studio and do as follows with R script to knit PDF output.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(factoextra)
+```
+
+a. Fit a k-means clustering model in the data with k = 2, plot it in the single graph and interpret it carefully
+
+```{r kmeans_2}
+# Load the USArrests dataset
+data("USArrests")
+
+# Scale the data
+scaled_data <- scale(USArrests)
+
+# Perform k-means clustering with k=2
+set.seed(123)  # for reproducibility
+km2 <- kmeans(scaled_data, centers = 2, nstart = 25)
+
+# Plot the clusters
+fviz_cluster(km2, data = scaled_data,
+             palette = c("#2E9FDF", "#FC4E07"),
+             geom = "point",
+             ellipse.type = "convex",
+             ggtheme = theme_minimal(),
+             main = "K-means Clustering with K=2")
+```
+
+**Interpretation for k=2:**
+The k-means clustering with k=2 divides the US states into two distinct groups based on their crime rates. The plot shows a clear separation between the clusters, where:
+- Cluster 1 (blue) represents states with generally lower crime rates
+- Cluster 2 (red) represents states with generally higher crime rates
+The separation suggests a natural dichotomy in crime patterns across US states.
+
+b. Add cluster centers for the plot of clusters formed with k = 2 and interpret it carefully
+
+```{r kmeans_2_centers}
+# Plot clusters with centers
+fviz_cluster(km2, data = scaled_data,
+             palette = c("#2E9FDF", "#FC4E07"),
+             geom = c("point", "text"),
+             ellipse.type = "convex",
+             ggtheme = theme_minimal(),
+             main = "K-means Clustering with K=2 (Including Centers)")
+
+# Print cluster centers
+print("Cluster Centers:")
+print(km2$centers)
+```
+
+**Interpretation of Cluster Centers for k=2:**
+The cluster centers represent the average values of the four variables (Murder, Assault, UrbanPop, and Rape) for each cluster. These centers help us understand the characteristics of each cluster:
+- The cluster centers show the average crime rates and urban population percentage for each group
+- The distance between centers indicates how distinct the clusters are
+- States closer to a center are more typical of that cluster's characteristics
+
+c. Fit a k-means clustering model in the data with k = 3, plot it in the single graph and interpret it carefully
+
+```{r kmeans_3}
+# Perform k-means clustering with k=3
+set.seed(123)
+km3 <- kmeans(scaled_data, centers = 3, nstart = 25)
+
+# Plot the clusters
+fviz_cluster(km3, data = scaled_data,
+             palette = c("#2E9FDF", "#FC4E07", "#00AFBB"),
+             geom = "point",
+             ellipse.type = "convex",
+             ggtheme = theme_minimal(),
+             main = "K-means Clustering with K=3")
+```
+
+**Interpretation for k=3:**
+The k-means clustering with k=3 provides a more nuanced view of crime patterns across US states:
+- Cluster 1 (blue) represents states with moderate crime rates
+- Cluster 2 (red) represents states with high crime rates
+- Cluster 3 (green) represents states with low crime rates
+This three-cluster solution reveals more detailed patterns in the data compared to the two-cluster solution.
+
+d. Add cluster centers for the plot of clusters formed with k = 3 and interpret it carefully
+
+```{r kmeans_3_centers}
+# Plot clusters with centers
+fviz_cluster(km3, data = scaled_data,
+             palette = c("#2E9FDF", "#FC4E07", "#00AFBB"),
+             geom = c("point", "text"),
+             ellipse.type = "convex",
+             ggtheme = theme_minimal(),
+             main = "K-means Clustering with K=3 (Including Centers)")
+
+# Print cluster centers
+print("Cluster Centers:")
+print(km3$centers)
+```
+
+**Interpretation of Cluster Centers for k=3:**
+The three cluster centers provide more detailed insights into the crime patterns:
+- Each center represents the average characteristics of its cluster
+- The relative positions of the centers show how the clusters differ in terms of crime rates and urban population
+- The distances between centers indicate the distinctness of each cluster
+- This three-cluster solution provides a more granular view of crime patterns across US states compared to the two-cluster solution

@@ -1,0 +1,69 @@
+---
+title: "Question 9"
+author: "Raju Bhujel (22)"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+9. Do as follows using in-built "USArrests" dataset with R script to knit PDF output.
+
+a. Create a "criminality scale" of four variables of this dataset using the Principal Component Analysis
+```{r}
+# Load required libraries
+library(psych)
+library(ggplot2)
+
+# Perform PCA on USArrests dataset
+pca_result <- prcomp(USArrests, scale = TRUE)
+
+# Display summary of PCA results
+summary(pca_result)
+```
+
+b. Compute the eigenvalues and interpret the PCA result carefully using Kaiser's criteria
+```{r}
+# Extract eigenvalues from PCA results
+eigenvalues <- pca_result$sdev^2
+
+# Create a data frame for eigenvalues
+eigen_df <- data.frame(
+  Component = 1:length(eigenvalues),
+  Eigenvalue = eigenvalues
+)
+
+# Display eigenvalues
+print("Eigenvalues:")
+print(eigenvalues)
+
+# Kaiser's criterion (eigenvalues > 1)
+print("Components meeting Kaiser's criterion (eigenvalue > 1):")
+print(sum(eigenvalues > 1))
+```
+
+c. Show the Scree plot and decide the number of components to retain with careful interpretation
+```{r}
+# Create Scree plot
+ggplot(eigen_df, aes(x = Component, y = Eigenvalue)) +
+  geom_line() +
+  geom_point() +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "red") +
+  labs(title = "Scree Plot",
+       x = "Component Number",
+       y = "Eigenvalue") +
+  theme_minimal()
+```
+
+d. Revise the criminality scale using varimax rotation and interpret the results carefully
+```{r}
+# Perform PCA with varimax rotation
+pca_rotated <- principal(USArrests, nfactors = 2, rotate = "varimax")
+
+# Display rotated component loadings
+print("Rotated Component Loadings:")
+print(pca_rotated$loadings, cutoff = 0.3)
+
+# Display variance explained by rotated components
+print("Variance Explained by Rotated Components:")
+print(pca_rotated$Vaccounted)
+```

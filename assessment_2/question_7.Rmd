@@ -1,0 +1,105 @@
+---
+title: "R Notebook"
+author: "Mandip Chaudhary (17)"
+output:
+  pdf_document:
+    fig_width: 8
+    fig_height: 6
+    fig_caption: true
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    keep_tex: true
+  html_notebook: default
+---
+
+7. Do the following in R Studio using "airquality" dataset of R with R script to knit PDF output.
+a. Perform test of normality of "Temp" variable by each category of "Month" variable and interpret all the results carefully
+```{r}
+# Load necessary libraries
+library(car)  # For Levene's test
+library(rstatix)  # For statistical tests
+library(ggplot2)  # For visualization
+
+# Load the dataset
+data(airquality)
+
+# Convert Month to factor for better analysis
+airquality$Month <- factor(airquality$Month, 
+                          levels = 5:9,
+                          labels = c("May", "June", "July", "August", "September"))
+
+# a. Test of normality for each month
+# Shapiro-Wilk test for each month
+normality_tests <- airquality %>%
+  group_by(Month) %>%
+  shapiro_test(Temp)
+
+print(normality_tests)
+
+# Visual check of normality using Q-Q plots
+ggplot(airquality, aes(sample = Temp)) +
+  geom_qq() +
+  geom_qq_line() +
+  facet_wrap(~Month) +
+  labs(title = "Q-Q Plots of Temperature by Month")
+```
+### a. Normality Test Results:
+The Shapiro-Wilk test was performed for each month to test the normality of temperature distributions. A p-value > 0.05 indicates normal distribution. Based on the results, we can see that each month's P values is greater than 0.05. Thus, it follows a normal distribution for each month.
+
+
+b. Perform test of equality of variance on "Temp" variable by each category of Month variable and interpret the result carefully
+```{r}
+# b. Test of equality of variance
+# Levene's test
+levene_test <- leveneTest(Temp ~ Month, data = airquality)
+print("\nLevene's Test for Equality of Variance:")
+print(levene_test)
+```
+
+### b. Equality of Variance Results:
+The Levene's test result (p-value = 0.03941 < 0.05) indicates that the temperature variances are significantly different across months. This means the spread of temperature values is not uniform across all months - some months show more temperature variation than others.
+
+
+
+c. Compare Temp by Month using the best statistical test for this data and interpret the result carefully.
+```{r}
+# c. ANOVA test
+# One-way ANOVA
+anova_result <- aov(Temp ~ Month, data = airquality)
+print("\nANOVA Results:")
+print(summary(anova_result))
+```
+
+### c. ANOVA Results:
+The one-way ANOVA test was performed to compare mean temperatures across different months. The F-statistic and p-value indicate whether there are significant differences in temperature means across months.
+The ANOVA results show a significant difference in mean temperatures across months (p-value < 0.05). This suggests that at least one month's temperature is significantly different from the others. However, ANOVA does not specify which months differ, so a post-hoc test is necessary to identify specific differences.
+
+
+d. Perform the post-hoc test and interpret the results carefully
+```{r}
+# d. Post-hoc analysis
+# Tukey's HSD test
+tukey_result <- TukeyHSD(anova_result)
+print("\nTukey's HSD Post-hoc Test Results:")
+print(tukey_result)
+
+# Visual representation of results
+ggplot(airquality, aes(x = Month, y = Temp, fill = Month)) +
+  geom_boxplot() +
+  labs(title = "Temperature Distribution by Month",
+       x = "Month",
+       y = "Temperature (°F)") +
+  theme_minimal()
+```
+
+### d. Post-hoc Analysis Results:
+Tukey's HSD test was performed to identify which specific months have significantly different temperatures from each other. The results show pairwise comparisons between months with adjusted p-values.
+
+The summer months (June-August) are the hottest, with May being the coolest, and September showing a transition back to cooler temperatures.
+
+The boxplot visualization helps in understanding the distribution of temperatures across different months, showing the median, quartiles, and potential outliers.
+
+
+
+

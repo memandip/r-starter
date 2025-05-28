@@ -1,0 +1,108 @@
+---
+title: "Second Assessment"
+author: "Mandip Chaudhary (17)"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+# Load necessary libraries
+```{r}
+library(ggplot2)
+library(dplyr)
+```
+
+
+6. Do the following using R studio using ggplot2 and dplyr packages with R script to knit PDF file
+
+a. Create a dataset with following variables: age (25-59 years), height (110-190 centimeters), weight (40-90 kg) with random 150 cases of each variable.
+```{r}
+set.seed(17)  # Roll number
+age <- sample(25:59, 150, replace = TRUE)
+height <- sample(110:190, 150, replace = TRUE)
+weight <- sample(40:90, 150, replace = TRUE)
+
+bmi_data <- data.frame(age, height, weight)
+```
+
+b. Compute body mass index (BMI) variable as: BMI = [(weight in kg) / (height in m)^2]
+```{r}
+bmi <- weight / ((height / 100) ^ 2)
+
+bmi_data <- bmi_data %>%
+  mutate(bmi = bmi)
+```
+
+
+c. Create a body mass categories: <18, 18-24, 25-30, 30+ and label them as "Underweight", "Normal", "Overweight", "Obese" respectively using dplyr package
+```{r}
+bmi_category <- case_when(
+  bmi < 18 ~ "Underweight",
+  bmi >= 18 & bmi < 25 ~ "Normal",
+  bmi >= 25 & bmi < 30 ~ "Overweight",
+  TRUE ~ "Obese"
+)
+
+bmi_data <- bmi_data %>%
+  mutate(bmi_category = bmi_category)
+```
+
+
+d. Show the percentage distribution of labelled BMI variable with pie chart using ggplot2 package
+```{r}
+pie_data <- bmi_data %>%
+  group_by(bmi_category) %>%
+  summarise(count = n()) %>%
+  mutate(percentage = count / sum(count) * 100)
+
+ggplot(pie_data, aes(x = "", y = percentage, fill = bmi_category)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar("y") +
+  labs(title = "Percentage Distribution of BMI Categories") +
+  theme_void() +
+  theme(legend.title = element_blank())
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
