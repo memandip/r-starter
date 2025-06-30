@@ -1,6 +1,9 @@
 ---
 title: "Market Basket Analysis"
-output: html_notebook
+always_allow_html: true
+output:
+  pdf_document: default
+  html_notebook: default
 ---
 
 ```{r}
@@ -20,6 +23,7 @@ names(market_basket) <- paste("T", 1:length(market_basket), sep = "")
 ## "arules" package and get some outputs
 ```{r}
 library(arules)
+library(arulesViz) 
 # Transformation
 trans <- as(market_basket, "transactions")
 

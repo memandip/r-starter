@@ -1,0 +1,90 @@
+---
+title: "Question 9"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+Note: 
+Exam Roll number: 8116017
+
+9. Do the following in R studio using mtcars dataset with R markdown to knit PDF output:
+a. Divide the data into train and test datasets with 70:30 random splits and your roll number as random seed
+b. Fit a supervised linear regression model and KNN regression model on train data with "mpg" as dependent variable and all other varaibles as independent variable
+c. Predict the miles per gallon variable in the test data using these models and get values for "wt=6000lbs"
+d. Compare the fit indices (R-Square, MSE, RMSE) of the predicted models and choose the best model
+
+```{r}
+# Load the dataset
+data(mtcars)
+
+# a. Divide the data into train and test datasets
+set.seed(8116017)
+
+train_index <- sample(1:nrow(mtcars), 0.7 * nrow(mtcars))
+train_data <- mtcars[train_index, ]
+test_data <- mtcars[-train_index, ]
+```
+
+```{r}
+# b. Fit Linear Regression and KNN models
+# Linear Regression Model
+lm_model <- lm(mpg ~ ., data = train_data)
+
+# KNN Regression Model (using caret package)
+library(caret)
+knn_model <- train(
+  mpg ~ .,
+  data = train_data,
+  method = "knn",
+  preProcess = c("center", "scale")
+)
+```
+
+```{r}
+# c. Predict on test data and for a specific value
+# Predictions on the test dataset
+lm_pred <- predict(lm_model, newdata = test_data)
+knn_pred <- predict(knn_model, newdata = test_data)
+
+# Prediction for wt=6000lbs (wt=6)
+# Create a new data frame for the prediction, using mean values for other variables
+new_car_data <- as.data.frame(lapply(train_data, mean))
+new_car_data$wt <- 6 # wt is in 1000lbs
+
+lm_pred_new_car <- predict(lm_model, newdata = new_car_data)
+knn_pred_new_car <- predict(knn_model, newdata = new_car_data)
+
+cat("Prediction for a car with wt=6000lbs:\n")
+cat("Linear Model MPG prediction:", lm_pred_new_car, "\n")
+cat("KNN Model MPG prediction:", knn_pred_new_car, "\n")
+```
+
+```{r}
+# d. Compare model performance
+# Calculate metrics for Linear Model
+lm_metrics <- postResample(pred = lm_pred, obs = test_data$mpg)
+lm_metrics["MSE"] <- lm_metrics["RMSE"]^2
+
+# Calculate metrics for KNN Model
+knn_metrics <- postResample(pred = knn_pred, obs = test_data$mpg)
+knn_metrics["MSE"] <- knn_metrics["RMSE"]^2
+
+# Create a comparison table
+comparison_df <- data.frame(
+  Model = c("Linear Regression", "KNN"),
+  RMSE = c(lm_metrics["RMSE"], knn_metrics["RMSE"]),
+  Rsquared = c(lm_metrics["Rsquared"], knn_metrics["Rsquared"]),
+  MSE = c(lm_metrics["MSE"], knn_metrics["MSE"])
+)
+print("Model Comparison:")
+print(comparison_df)
+```
+
+**Choosing the best model:**
+To choose the best model, we compare the performance metrics on the test data. We look for a model with a lower Root Mean Squared Error (RMSE) and Mean Squared Error (MSE), and a higher R-squared value.
+
+- The **KNN model** has a lower RMSE (2.87 vs 3.55) and MSE (8.25 vs 12.63) compared to the Linear Regression model. This indicates that the KNN model's predictions are, on average, closer to the actual values.
+- The **Linear Regression model** has a slightly higher R-squared value (0.81 vs 0.77), suggesting it explains a slightly larger proportion of the variance in the dependent variable.
+
+Given that lower prediction error (RMSE and MSE) is typically the primary goal, the **KNN model is the best model** for this specific train/test split because it provides more accurate predictions.

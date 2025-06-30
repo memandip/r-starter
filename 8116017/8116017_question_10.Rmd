@@ -1,0 +1,66 @@
+---
+title: "Question 10"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+10. Use the "USArrests" data and do as follows in the R studio with R markdown to knit PDF output:
+a. Fit a hierarchical clustering model using single linkage and ge the dendogram for this model
+b. Fit a hierarchical clustering model using complete linkage and get the dendogram for this model
+c. Fit a hierarchical clustering model using average linkage and get the dendogram for this model
+d. Show the number of clusters (k) to retain for the data using ablines in the dendogram of the best model
+
+```{r}
+# Load the USArrests dataset
+data(USArrests)
+
+# Scale the data before clustering
+df <- scale(USArrests)
+
+# Calculate the distance matrix
+dist_matrix <- dist(df, method = 'euclidean')
+```
+
+### a. Hierarchical Clustering with Single Linkage
+
+```{r}
+hc_single <- hclust(dist_matrix, method = "single")
+plot(hc_single, main = "Dendrogram (Single Linkage)", xlab = "States", ylab = "Distance")
+```
+
+### b. Hierarchical Clustering with Complete Linkage
+
+```{r}
+hc_complete <- hclust(dist_matrix, method = "complete")
+plot(hc_complete, main = "Dendrogram (Complete Linkage)", xlab = "States", ylab = "Distance")
+```
+
+### c. Hierarchical Clustering with Average Linkage
+
+```{r}
+hc_average <- hclust(dist_matrix, method = "average")
+plot(hc_average, main = "Dendrogram (Average Linkage)", xlab = "States", ylab = "Distance")
+```
+
+### d. Best Model and Number of Clusters
+
+**Choosing the best model:**
+- **Single linkage** is prone to a "chaining" effect, where clusters are elongated and straggly. This is visible in its dendrogram.
+- **Complete linkage** tends to produce more compact, spherical clusters, but can be sensitive to outliers.
+- **Average linkage** is a compromise between the two. It is less susceptible to chaining and outliers.
+
+For this analysis, we will choose the **average linkage** model as the "best" because it often provides a more balanced and interpretable clustering structure.
+
+**Determining the number of clusters (k):**
+We can determine the number of clusters by examining the dendrogram and identifying the point where a horizontal cut would cross the most vertical distance without intersecting a cluster. Looking at the average linkage dendrogram, a cut at a height of around 3 would result in 4 distinct clusters. This is a common choice for this dataset.
+
+```{r}
+# Plot the dendrogram for the best model (average linkage)
+plot(hc_average, main = "Best Model: Dendrogram (Average Linkage)", xlab = "States", ylab = "Distance")
+
+# Add ablines to show k=4 clusters
+rect.hclust(hc_average, k = 4, border = "red")
+```
+
+The red rectangles in the dendrogram above show the 4 clusters retained from the hierarchical clustering model with average linkage.

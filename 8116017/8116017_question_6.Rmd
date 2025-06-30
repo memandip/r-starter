@@ -1,0 +1,50 @@
+---
+title: "Question 6"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+6. Load the "igraph" package in R studio and do the basic SNA with R script to knit PDF OUTPUT:
+a. Define g1 as graph object with ("R", "S", "S", "T", "T", "R", "R", "T", "U", "S") as its element
+b. Plot g1 with node color as green, node size as 30, link color as red and link size as 5 and interpret it
+c. Get the degree of g1 and interpret them carefully
+d. Get closeness of g1 and interpret them carefully
+
+```{r}
+library(igraph)
+```
+
+a. Define g1 as graph object with ("R", "S", "S", "T", "T", "R", "R", "T", "U", "S") as its element
+```{r}
+g1 <- graph(c("R", "S", "S", "T", "T", "R", "R", "T", "U", "S"))
+g1
+```
+
+b. Plot g1 with node color as green, node size as 30, link color as red and link size as 5 and interpret it
+```{r}
+plot(g1, vertex.color = "green", vertex.size = 30, edge.color = "red", edge.width = 5)
+```
+**Interpretation:** The plot displays a directed graph with 4 nodes (R, S, T, U) and 5 edges. The nodes are represented by green circles, and the directed links between them are shown as red arrows. We can observe a cycle between nodes R, S, and T. Node U is only connected to the network through an outgoing edge to node S.
+
+c. Get the degree of g1 and interpret them carefully
+```{r}
+cat("In-degree:\n")
+print(degree(g1, mode = "in"))
+cat("\nOut-degree:\n")
+print(degree(g1, mode = "out"))
+cat("\nTotal degree:\n")
+print(degree(g1, mode = "total"))
+```
+**Interpretation:** The degree of a node is its number of connections. In a directed graph, we consider in-degree (incoming) and out-degree (outgoing).
+
+*   **In-degree**: R has 1, S has 2, T has 2, and U has 0. Nodes S and T receive the most links. Node U receives none.
+*   **Out-degree**: R has 2, S has 1, T has 1, and U has 1. Node R has the most outgoing links, making it influential.
+*   **Total degree**: R has 3, S has 3, T has 3, and U has 1. Nodes R, S, and T are the most active nodes overall in the network.
+
+
+d. Get closeness of g1 and interpret them carefully
+```{r}
+closeness(g1, mode = "out")
+```
+**Interpretation:** Closeness centrality indicates how close a node is to all other reachable nodes. Higher values mean a node is more central. Because not all nodes are reachable from every other node in this directed graph (e.g., node U cannot be reached from R, S, or T), the closeness centrality is 0 for R, S, and T. Node U can reach all other nodes, so it has a non-zero closeness value. The result indicates that node U is the most central node in terms of its ability to reach other nodes in the network.

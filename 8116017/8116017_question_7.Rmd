@@ -1,0 +1,100 @@
+---
+title: "Question 7"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+7. Do the following in R studio using "mtcars" dataset with R script to knit PDF output:
+a. Get the bar plot of the "mpg" variable using ggplot2 package and interpret them carefully
+b. Get the boxplot of "mpg" variable using ggplot2 package and interpret them carefully
+c. Get scatter plot of "mpg" and "wt" variable using ggplot2 package and interpret it carefully
+d. Get appropriate correlation cofficient for "mpg" and "wt" and interpret it carefully
+
+```{r}
+# Load necessary libraries
+library(ggplot2)
+library(dplyr)
+
+# Prepare data for plotting (add car names as a column)
+mtcars_data <- mtcars %>%
+  tibble::rownames_to_column(var = "car_name")
+```
+
+### a. Bar plot of MPG
+
+```{r}
+ggplot(mtcars_data, aes(x = reorder(car_name, mpg), y = mpg)) +
+  geom_bar(stat = "identity", fill = "skyblue") +
+  coord_flip() +  # Makes the bar chart horizontal for better readability of labels
+  labs(
+    title = "Bar Plot of MPG for Different Car Models",
+    x = "Car Model",
+    y = "Miles Per Gallon (MPG)"
+  ) +
+  theme_minimal()
+```
+
+**Interpretation of the Bar Plot:**
+The bar plot displays the Miles Per Gallon (MPG) for each car model from the `mtcars` dataset. The cars are ordered by their fuel efficiency. We can clearly see that the 'Toyota Corolla' has the highest MPG, while the 'Cadillac Fleetwood' and 'Lincoln Continental' are among the cars with the lowest MPG.
+
+### b. Boxplot of MPG
+
+```{r}
+ggplot(mtcars, aes(y = mpg)) +
+  geom_boxplot(fill = "lightgreen") +
+  labs(
+    title = "Boxplot of Miles Per Gallon (MPG)",
+    y = "Miles Per Gallon (MPG)",
+    x = ""  # Hide x-axis label as it's not meaningful here
+  ) +
+  theme_minimal() +
+  coord_flip() # Horizontal boxplot
+```
+
+**Interpretation of the Boxplot:**
+The boxplot provides a summary of the distribution of the 'mpg' variable.
+- The **median** MPG (the line inside the box) is approximately 19.2.
+- The **box** itself represents the interquartile range (IQR), containing the middle 50% of the data, from the 25th percentile (Q1) to the 75th percentile (Q3).
+- The **whiskers** extend to the minimum and maximum values within 1.5 times the IQR.
+- The point for the 'Toyota Corolla' is shown as an **outlier**, indicating that its MPG is significantly higher than the rest of the cars in the dataset.
+
+### c. Scatter plot of MPG and Weight
+
+```{r}
+ggplot(mtcars, aes(x = wt, y = mpg)) +
+  geom_point(color = "darkblue") +
+  geom_smooth(method = "lm", se = FALSE, color = "red") + # Add a linear regression line
+  labs(
+    title = "Scatter Plot of MPG vs. Weight",
+    x = "Weight (1000 lbs)",
+    y = "Miles Per Gallon (MPG)"
+  ) +
+  theme_bw()
+```
+
+**Interpretation of the Scatter Plot:**
+The scatter plot reveals a clear, strong, negative linear relationship between a car's weight (`wt`) and its fuel efficiency (`mpg`). As the weight of the car increases, its miles per gallon tends to decrease. The red line represents the line of best fit, which visually confirms this downward trend.
+
+### d. Correlation Coefficient for MPG and Weight
+
+To determine the appropriate correlation coefficient, we first test the normality of the two variables. If both are normal, we use the Pearson correlation test. Otherwise, we use a non-parametric test like Spearman's.
+
+```{r}
+# Check for normality
+shapiro_mpg <- shapiro.test(mtcars$mpg)
+shapiro_wt <- shapiro.test(mtcars$wt)
+
+cat("Shapiro-Wilk test for MPG p-value:", shapiro_mpg$p.value, "\n")
+cat("Shapiro-Wilk test for WT p-value:", shapiro_wt$p.value, "\n")
+```
+Since both p-values are greater than 0.05, we do not reject the null hypothesis of normality. Therefore, the **Pearson correlation coefficient** is appropriate.
+
+```{r}
+# Calculate Pearson correlation
+cor_test <- cor.test(mtcars$wt, mtcars$mpg, method = "pearson")
+print(cor_test)
+```
+
+**Interpretation of the Correlation Coefficient:**
+The Pearson correlation coefficient is `r round(cor_test$estimate, 3)`. This value indicates a very strong negative linear relationship between car weight (`wt`) and miles per gallon (`mpg`). The p-value is extremely small (`p < 0.001`), indicating that this correlation is highly statistically significant. In practical terms, this confirms that as a car's weight goes up, its fuel efficiency goes down.

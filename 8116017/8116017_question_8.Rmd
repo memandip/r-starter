@@ -1,0 +1,61 @@
+---
+title: "Question 8"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+8. Do the following in R studio using "airquality" dataset with R markdown to knit PDF output:
+a. Perform Shapiro-Wilk test on "Wind" variable and check normality of this variable
+b. Perform Bartlett test on "Wind" variable by "Month" variable and check equality of variance
+c. Fit 1-way ANOVA to compare "Wind" variable by "Month" variable and interpret the result carefully
+d. Fit the TukeyHSD post-hoc test with 95% confidence interval and interpret the result carefully
+
+```{r}
+# Load the dataset
+data(airquality)
+
+# a. Perform Shapiro-Wilk test on "Wind" variable
+shapiro_test <- shapiro.test(airquality$Wind)
+print("Shapiro-Wilk test for normality of Wind:")
+print(shapiro_test)
+```
+
+**Interpretation of Shapiro-Wilk Test:**
+The null hypothesis (H0) for the Shapiro-Wilk test is that the data is normally distributed. The p-value obtained is `r format.pval(shapiro_test$p.value)`. Since this p-value is greater than the significance level of 0.05, we fail to reject the null hypothesis. This suggests that the "Wind" variable is normally distributed.
+
+```{r}
+# b. Perform Bartlett test
+# Ensure 'Month' is treated as a factor
+airquality$Month <- as.factor(airquality$Month)
+bartlett_test <- bartlett.test(Wind ~ Month, data = airquality)
+print("Bartlett test for equality of variances:")
+print(bartlett_test)
+```
+
+**Interpretation of Bartlett Test:**
+The null hypothesis (H0) for the Bartlett test is that the variances of "Wind" are equal across all months. The p-value is `r round(bartlett_test$p.value, 3)`, which is greater than 0.05. Therefore, we fail to reject the null hypothesis, concluding that there is no significant evidence of a difference in variances for "Wind" across the months.
+
+```{r}
+# c. Fit 1-way ANOVA
+anova_model <- aov(Wind ~ Month, data = airquality)
+print("ANOVA results:")
+summary(anova_model)
+```
+
+**Interpretation of ANOVA:**
+The ANOVA test checks if there are any statistically significant differences between the means of two or more independent groups. The null hypothesis (H0) is that there is no difference in the mean "Wind" across the months. The p-value is very small (p < 0.001), leading us to reject the null hypothesis. This indicates that there is a statistically significant difference in the mean wind speed among the different months.
+
+```{r}
+# d. Fit the TukeyHSD post-hoc test
+tukey_test <- TukeyHSD(anova_model)
+print("TukeyHSD post-hoc test:")
+print(tukey_test)
+```
+
+**Interpretation of TukeyHSD Test:**
+The TukeyHSD test provides pairwise comparisons of the means. The `p adj` column shows the p-value for the difference between each pair of months.
+- A `p adj` value less than 0.05 indicates a significant difference between the pair.
+- For example, the difference in mean wind speed between July (Month 7) and May (Month 5) is significant (p = 0.0002).
+- Conversely, the difference between June (Month 6) and May (Month 5) is not significant (p = 0.99).
+We can see significant differences for pairs: (7-5), (8-5), (9-5), (8-6), (9-6), (9-7).
